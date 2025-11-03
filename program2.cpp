@@ -15,6 +15,12 @@ int main() {
     cout << "Enter a number: ";
     cin >> n;
 
+    // Input validation
+    if (n < 0) {
+        cout << "Error: Factorial is not defined for negative numbers!" << endl;
+        return 1;
+    }
+
     cout << "Factorial of " << n << " = " << factorial(n) << endl;
     return 0;
 }
