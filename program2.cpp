@@ -1,7 +1,7 @@
 #include <iostream>
 using namespace std;
 
-int factorial(int n, int depth = 0) {
+int factorialRecursive(int n, int depth = 0) {
     // Display recursion step
     for (int i = 0; i < depth; i++) cout << "  ";
     cout << "factorial(" << n << ")" << endl;
@@ -14,9 +14,17 @@ int factorial(int n, int depth = 0) {
     }
 
     // Recursive case
-    int result = n * factorial(n - 1, depth + 1);
+    int result = n * factorialRecursive(n - 1, depth + 1);
     for (int i = 0; i < depth; i++) cout << "  ";
     cout << "-> Returning " << n << " * factorial(" << n - 1 << ") = " << result << endl;
+    return result;
+}
+
+int factorialIterative(int n) {
+    int result = 1;
+    for (int i = 2; i <= n; i++) {
+        result *= i;
+    }
     return result;
 }
 
@@ -31,8 +39,13 @@ int main() {
         return 1;
     }
 
-    cout << "\nRecursion steps:\n";
-    int result = factorial(n);
-    cout << "\nFinal result: Factorial of " << n << " = " << result << endl;
+    cout << "\n=== Recursive Approach ===" << endl;
+    int recursiveResult = factorialRecursive(n);
+    
+    cout << "\n=== Iterative Approach ===" << endl;
+    int iterativeResult = factorialIterative(n);
+    cout << "Factorial of " << n << " = " << iterativeResult << endl;
+
+    cout << "\nFinal result: Factorial of " << n << " = " << recursiveResult << endl;
     return 0;
 }
