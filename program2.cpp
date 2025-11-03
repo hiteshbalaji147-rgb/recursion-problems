@@ -30,6 +30,9 @@ int factorialIterative(int n) {
 
 int main() {
     int n;
+    cout << "========================================" << endl;
+    cout << "     Factorial Calculator Program      " << endl;
+    cout << "========================================" << endl;
     cout << "Enter a number: ";
     cin >> n;
 
@@ -39,6 +42,11 @@ int main() {
         return 1;
     }
 
+    // Overflow warning
+    if (n > 12) {
+        cout << "Warning: Result may overflow for n > 12 with int type!" << endl;
+    }
+
     cout << "\n=== Recursive Approach ===" << endl;
     int recursiveResult = factorialRecursive(n);
     
@@ -46,6 +54,8 @@ int main() {
     int iterativeResult = factorialIterative(n);
     cout << "Factorial of " << n << " = " << iterativeResult << endl;
 
-    cout << "\nFinal result: Factorial of " << n << " = " << recursiveResult << endl;
+    cout << "\n========================================" << endl;
+    cout << "Final result: " << n << "! = " << recursiveResult << endl;
+    cout << "========================================" << endl;
     return 0;
 }
