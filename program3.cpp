@@ -22,6 +22,12 @@ int main() {
     cout << "Enter exponent (n): ";
     cin >> n;
 
+    // Input validation
+    if (x == 0 && n < 0) {
+        cout << "Error: 0 raised to negative power is undefined!" << endl;
+        return 1;
+    }
+
     cout << x << "^" << n << " = " << power(x, n) << endl;
     return 0;
 }
