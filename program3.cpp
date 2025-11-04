@@ -1,17 +1,30 @@
 #include <iostream>
 using namespace std;
 
-double power(double x, int n) {
+double power(double x, int n, int depth = 0) {
+    // Display recursion step
+    for (int i = 0; i < depth; i++) cout << "  ";
+    cout << "power(" << x << ", " << n << ")" << endl;
+
     // Base case
-    if (n == 0)
+    if (n == 0) {
+        for (int i = 0; i < depth; i++) cout << "  ";
+        cout << "-> Base case: returning 1" << endl;
         return 1;
+    }
 
     // Handle negative exponents
-    if (n < 0)
-        return 1.0 / power(x, -n);
+    if (n < 0) {
+        for (int i = 0; i < depth; i++) cout << "  ";
+        cout << "-> Negative exponent: 1 / power(" << x << ", " << -n << ")" << endl;
+        return 1.0 / power(x, -n, depth + 1);
+    }
 
     // Recursive case
-    return x * power(x, n - 1);
+    double result = x * power(x, n - 1, depth + 1);
+    for (int i = 0; i < depth; i++) cout << "  ";
+    cout << "-> Returning " << x << " * power(" << x << ", " << n - 1 << ") = " << result << endl;
+    return result;
 }
 
 // Optimized power using divide and conquer
@@ -46,7 +59,12 @@ int main() {
         return 1;
     }
 
-    cout << "\nBasic Recursion: " << x << "^" << n << " = " << power(x, n) << endl;
-    cout << "Optimized Recursion: " << x << "^" << n << " = " << powerOptimized(x, n) << endl;
+    cout << "\n=== Basic Recursion Steps ===" << endl;
+    double result1 = power(x, n);
+    
+    cout << "\n=== Optimized Recursion ===" << endl;
+    double result2 = powerOptimized(x, n);
+    cout << "Result: " << x << "^" << n << " = " << result2 << endl;
+    
     return 0;
 }
