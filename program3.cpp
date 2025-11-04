@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cmath>
 #include <chrono>
+#include <iomanip>
 using namespace std;
 using namespace chrono;
 
@@ -84,6 +85,8 @@ int main() {
         return 1;
     }
 
+    cout << fixed << setprecision(6);
+
     cout << "\n=== Basic Recursion Steps ===" << endl;
     recursionCount = 0;
     auto start1 = high_resolution_clock::now();
@@ -92,6 +95,8 @@ int main() {
     auto duration1 = duration_cast<microseconds>(end1 - start1);
     cout << "Recursion calls: " << recursionCount << endl;
     cout << "Time: " << duration1.count() << " microseconds" << endl;
+    cout << "Time Complexity: O(n)" << endl;
+    cout << "Space Complexity: O(n)" << endl;
     
     cout << "\n=== Optimized Recursion ===" << endl;
     auto start2 = high_resolution_clock::now();
@@ -100,6 +105,8 @@ int main() {
     auto duration2 = duration_cast<microseconds>(end2 - start2);
     cout << "Result: " << x << "^" << n << " = " << result2 << endl;
     cout << "Time: " << duration2.count() << " microseconds" << endl;
+    cout << "Time Complexity: O(log n)" << endl;
+    cout << "Space Complexity: O(log n)" << endl;
     
     cout << "\n=== Iterative Approach ===" << endl;
     auto start3 = high_resolution_clock::now();
@@ -108,8 +115,15 @@ int main() {
     auto duration3 = duration_cast<microseconds>(end3 - start3);
     cout << "Result: " << x << "^" << n << " = " << result3 << endl;
     cout << "Time: " << duration3.count() << " microseconds" << endl;
+    cout << "Time Complexity: O(n)" << endl;
+    cout << "Space Complexity: O(1)" << endl;
     
     cout << "\n========================================" << endl;
+    cout << "Performance Comparison:" << endl;
+    cout << "  Basic Recursion: " << duration1.count() << " μs" << endl;
+    cout << "  Optimized Recursion: " << duration2.count() << " μs" << endl;
+    cout << "  Iterative: " << duration3.count() << " μs" << endl;
+    cout << "========================================" << endl;
     
     return 0;
 }
