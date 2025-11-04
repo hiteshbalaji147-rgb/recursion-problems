@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 using namespace std;
 
 double power(double x, int n, int depth = 0) {
@@ -45,6 +46,21 @@ double powerOptimized(double x, int n) {
         return x * half * half;
 }
 
+// Iterative power function
+double powerIterative(double x, int n) {
+    if (n == 0) return 1;
+    
+    bool negative = n < 0;
+    n = abs(n);
+    
+    double result = 1;
+    for (int i = 0; i < n; i++) {
+        result *= x;
+    }
+    
+    return negative ? 1.0 / result : result;
+}
+
 int main() {
     double x;
     int n;
@@ -65,6 +81,10 @@ int main() {
     cout << "\n=== Optimized Recursion ===" << endl;
     double result2 = powerOptimized(x, n);
     cout << "Result: " << x << "^" << n << " = " << result2 << endl;
+    
+    cout << "\n=== Iterative Approach ===" << endl;
+    double result3 = powerIterative(x, n);
+    cout << "Result: " << x << "^" << n << " = " << result3 << endl;
     
     return 0;
 }
