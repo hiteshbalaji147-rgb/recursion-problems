@@ -31,8 +31,25 @@ int fibonacciMemo(int n, vector<int>& memo) {
     return memo[n];
 }
 
+// Iterative Fibonacci
+int fibonacciIterative(int n) {
+    if (n == 0) return 0;
+    if (n == 1) return 1;
+
+    int prev2 = 0, prev1 = 1, current;
+    for (int i = 2; i <= n; i++) {
+        current = prev1 + prev2;
+        prev2 = prev1;
+        prev1 = current;
+    }
+    return current;
+}
+
 int main() {
     int n;
+    cout << "========================================" << endl;
+    cout << "    Fibonacci Sequence Generator       " << endl;
+    cout << "========================================" << endl;
     cout << "Enter the number of terms: ";
     cin >> n;
 
@@ -42,18 +59,41 @@ int main() {
         return 1;
     }
 
-    cout << "Fibonacci sequence (Basic): ";
+    if (n > 40) {
+        cout << "Warning: Basic recursion will be slow for n > 40!" << endl;
+    }
+
+    cout << "\n=== Fibonacci Sequence (Basic Recursion) ===" << endl;
     for (int i = 0; i < n; i++) {
         cout << fibonacci(i) << " ";
     }
     cout << endl;
 
-    cout << "Fibonacci sequence (Memoized): ";
+    cout << "\n=== Fibonacci Sequence (Memoized) ===" << endl;
     vector<int> memo(n, -1);
     for (int i = 0; i < n; i++) {
         cout << fibonacciMemo(i, memo) << " ";
     }
     cout << endl;
+
+    cout << "\n=== Fibonacci Sequence (Iterative) ===" << endl;
+    for (int i = 0; i < n; i++) {
+        cout << fibonacciIterative(i) << " ";
+    }
+    cout << endl;
+
+    // Statistics
+    cout << "\n========================================" << endl;
+    cout << "Statistics:" << endl;
+    cout << "  Total terms: " << n << endl;
+    cout << "  Last term: " << fibonacciIterative(n - 1) << endl;
+    
+    int sum = 0;
+    for (int i = 0; i < n; i++) {
+        sum += fibonacciIterative(i);
+    }
+    cout << "  Sum of all terms: " << sum << endl;
+    cout << "========================================" << endl;
 
     return 0;
 }
