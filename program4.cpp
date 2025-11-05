@@ -1,9 +1,15 @@
 #include <iostream>
 #include <vector>
+#include <chrono>
 using namespace std;
+using namespace chrono;
+
+int recursionCalls = 0;
 
 // Basic recursive Fibonacci
 int fibonacci(int n) {
+    recursionCalls++;
+    
     // Base cases
     if (n == 0)
         return 0;
@@ -64,23 +70,43 @@ int main() {
     }
 
     cout << "\n=== Fibonacci Sequence (Basic Recursion) ===" << endl;
+    recursionCalls = 0;
+    auto start1 = high_resolution_clock::now();
     for (int i = 0; i < n; i++) {
         cout << fibonacci(i) << " ";
     }
+    auto end1 = high_resolution_clock::now();
+    auto duration1 = duration_cast<milliseconds>(end1 - start1);
     cout << endl;
+    cout << "Time: " << duration1.count() << " ms" << endl;
+    cout << "Total recursion calls: " << recursionCalls << endl;
+    cout << "Time Complexity: O(2^n)" << endl;
+    cout << "Space Complexity: O(n)" << endl;
 
     cout << "\n=== Fibonacci Sequence (Memoized) ===" << endl;
     vector<int> memo(n, -1);
+    auto start2 = high_resolution_clock::now();
     for (int i = 0; i < n; i++) {
         cout << fibonacciMemo(i, memo) << " ";
     }
+    auto end2 = high_resolution_clock::now();
+    auto duration2 = duration_cast<milliseconds>(end2 - start2);
     cout << endl;
+    cout << "Time: " << duration2.count() << " ms" << endl;
+    cout << "Time Complexity: O(n)" << endl;
+    cout << "Space Complexity: O(n)" << endl;
 
     cout << "\n=== Fibonacci Sequence (Iterative) ===" << endl;
+    auto start3 = high_resolution_clock::now();
     for (int i = 0; i < n; i++) {
         cout << fibonacciIterative(i) << " ";
     }
+    auto end3 = high_resolution_clock::now();
+    auto duration3 = duration_cast<milliseconds>(end3 - start3);
     cout << endl;
+    cout << "Time: " << duration3.count() << " ms" << endl;
+    cout << "Time Complexity: O(n^2) for loop" << endl;
+    cout << "Space Complexity: O(1)" << endl;
 
     // Statistics
     cout << "\n========================================" << endl;
@@ -93,6 +119,11 @@ int main() {
         sum += fibonacciIterative(i);
     }
     cout << "  Sum of all terms: " << sum << endl;
+    
+    cout << "\nPerformance Comparison:" << endl;
+    cout << "  Basic Recursion: " << duration1.count() << " ms" << endl;
+    cout << "  Memoized: " << duration2.count() << " ms" << endl;
+    cout << "  Iterative: " << duration3.count() << " ms" << endl;
     cout << "========================================" << endl;
 
     return 0;
