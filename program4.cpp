@@ -17,6 +17,12 @@ int main() {
     cout << "Enter the number of terms: ";
     cin >> n;
 
+    // Input validation
+    if (n <= 0) {
+        cout << "Error: Please enter a positive integer!" << endl;
+        return 1;
+    }
+
     cout << "Fibonacci sequence: ";
     for (int i = 0; i < n; i++) {
         cout << fibonacci(i) << " ";
