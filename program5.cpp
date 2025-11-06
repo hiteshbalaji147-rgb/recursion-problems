@@ -30,6 +30,14 @@ bool isMirror(Node* left, Node* right) {
            isMirror(left->right, right->left);
 }
 
+// Check if tree is symmetric
+bool isSymmetric(Node* root) {
+    if (root == nullptr)
+        return true;
+    
+    return isMirror(root->left, root->right);
+}
+
 int main() {
     cout << "Symmetric Binary Tree Program" << endl;
     return 0;
