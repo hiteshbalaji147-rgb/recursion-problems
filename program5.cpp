@@ -103,19 +103,11 @@ bool isSymmetric(Node* root) {
     return isMirror(root->left, root->right);
 }
 
-int main() {
+// Display tree info
+void displayTreeInfo(Node* root, string treeName) {
+    cout << "\n========================================" << endl;
+    cout << "  " << treeName << endl;
     cout << "========================================" << endl;
-    cout << "    Symmetric Binary Tree Program      " << endl;
-    cout << "========================================" << endl;
-    
-    // Create a symmetric tree
-    Node* root = createNode(1);
-    root->left = createNode(2);
-    root->right = createNode(2);
-    root->left->left = createNode(3);
-    root->left->right = createNode(4);
-    root->right->left = createNode(4);
-    root->right->right = createNode(3);
     
     cout << "\nTree Statistics:" << endl;
     cout << "Height: " << height(root) << endl;
@@ -135,11 +127,42 @@ int main() {
     postorder(root);
     cout << endl;
     
-    cout << "\nSymmetry Check:" << endl;
+    cout << "\nSymmetry Check: ";
     if (isSymmetric(root))
-        cout << "Tree is symmetric!" << endl;
+        cout << "✓ Tree is SYMMETRIC!" << endl;
     else
-        cout << "Tree is not symmetric!" << endl;
+        cout << "✗ Tree is NOT symmetric!" << endl;
+}
+
+int main() {
+    cout << "========================================" << endl;
+    cout << "    Symmetric Binary Tree Program      " << endl;
+    cout << "========================================" << endl;
+    
+    // Test Case 1: Symmetric tree
+    Node* tree1 = createNode(1);
+    tree1->left = createNode(2);
+    tree1->right = createNode(2);
+    tree1->left->left = createNode(3);
+    tree1->left->right = createNode(4);
+    tree1->right->left = createNode(4);
+    tree1->right->right = createNode(3);
+    
+    displayTreeInfo(tree1, "Test Case 1: Symmetric Tree");
+    
+    // Test Case 2: Asymmetric tree
+    Node* tree2 = createNode(1);
+    tree2->left = createNode(2);
+    tree2->right = createNode(2);
+    tree2->left->right = createNode(3);
+    tree2->right->right = createNode(3);
+    
+    displayTreeInfo(tree2, "Test Case 2: Asymmetric Tree");
+    
+    // Test Case 3: Single node (symmetric)
+    Node* tree3 = createNode(1);
+    
+    displayTreeInfo(tree3, "Test Case 3: Single Node Tree");
     
     return 0;
 }
