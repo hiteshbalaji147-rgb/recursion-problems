@@ -14,6 +14,11 @@ struct Node {
     }
 };
 
+// Create a new node
+Node* createNode(int data) {
+    return new Node(data);
+}
+
 // Check if two trees are mirror images
 bool isMirror(Node* left, Node* right) {
     // Both empty
@@ -39,6 +44,23 @@ bool isSymmetric(Node* root) {
 }
 
 int main() {
-    cout << "Symmetric Binary Tree Program" << endl;
+    cout << "========================================" << endl;
+    cout << "    Symmetric Binary Tree Program      " << endl;
+    cout << "========================================" << endl;
+    
+    // Create a symmetric tree
+    Node* root = createNode(1);
+    root->left = createNode(2);
+    root->right = createNode(2);
+    root->left->left = createNode(3);
+    root->left->right = createNode(4);
+    root->right->left = createNode(4);
+    root->right->right = createNode(3);
+    
+    if (isSymmetric(root))
+        cout << "Tree is symmetric!" << endl;
+    else
+        cout << "Tree is not symmetric!" << endl;
+    
     return 0;
 }
