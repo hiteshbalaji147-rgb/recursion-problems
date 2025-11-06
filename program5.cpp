@@ -1,4 +1,5 @@
 #include <iostream>
+#include <queue>
 using namespace std;
 
 // Tree Node structure
@@ -79,6 +80,28 @@ void postorder(Node* root) {
     cout << root->data << " ";
 }
 
+// Level order traversal (BFS)
+void levelOrder(Node* root) {
+    if (root == nullptr)
+        return;
+    
+    queue<Node*> q;
+    q.push(root);
+    
+    while (!q.empty()) {
+        Node* current = q.front();
+        q.pop();
+        
+        cout << current->data << " ";
+        
+        if (current->left != nullptr)
+            q.push(current->left);
+        
+        if (current->right != nullptr)
+            q.push(current->right);
+    }
+}
+
 // Check if two trees are mirror images
 bool isMirror(Node* left, Node* right) {
     // Both empty
@@ -125,6 +148,10 @@ void displayTreeInfo(Node* root, string treeName) {
     
     cout << "Postorder: ";
     postorder(root);
+    cout << endl;
+    
+    cout << "Level Order: ";
+    levelOrder(root);
     cout << endl;
     
     cout << "\nSymmetry Check: ";
