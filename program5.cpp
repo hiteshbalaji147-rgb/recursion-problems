@@ -19,6 +19,36 @@ Node* createNode(int data) {
     return new Node(data);
 }
 
+// Inorder traversal (Left, Root, Right)
+void inorder(Node* root) {
+    if (root == nullptr)
+        return;
+    
+    inorder(root->left);
+    cout << root->data << " ";
+    inorder(root->right);
+}
+
+// Preorder traversal (Root, Left, Right)
+void preorder(Node* root) {
+    if (root == nullptr)
+        return;
+    
+    cout << root->data << " ";
+    preorder(root->left);
+    preorder(root->right);
+}
+
+// Postorder traversal (Left, Right, Root)
+void postorder(Node* root) {
+    if (root == nullptr)
+        return;
+    
+    postorder(root->left);
+    postorder(root->right);
+    cout << root->data << " ";
+}
+
 // Check if two trees are mirror images
 bool isMirror(Node* left, Node* right) {
     // Both empty
@@ -57,6 +87,20 @@ int main() {
     root->right->left = createNode(4);
     root->right->right = createNode(3);
     
+    cout << "\nTree Traversals:" << endl;
+    cout << "Inorder: ";
+    inorder(root);
+    cout << endl;
+    
+    cout << "Preorder: ";
+    preorder(root);
+    cout << endl;
+    
+    cout << "Postorder: ";
+    postorder(root);
+    cout << endl;
+    
+    cout << "\nSymmetry Check:" << endl;
     if (isSymmetric(root))
         cout << "Tree is symmetric!" << endl;
     else
