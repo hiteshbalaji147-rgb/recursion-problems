@@ -1,5 +1,6 @@
 #include <iostream>
 #include <queue>
+#include <iomanip>
 using namespace std;
 
 // Tree Node structure
@@ -18,6 +19,16 @@ struct Node {
 // Create a new node
 Node* createNode(int data) {
     return new Node(data);
+}
+
+// Delete tree (post-order deletion)
+void deleteTree(Node* root) {
+    if (root == nullptr)
+        return;
+    
+    deleteTree(root->left);
+    deleteTree(root->right);
+    delete root;
 }
 
 // Calculate height of tree
@@ -48,6 +59,14 @@ int countLeaves(Node* root) {
         return 1;
     
     return countLeaves(root->left) + countLeaves(root->right);
+}
+
+// Count internal nodes
+int countInternal(Node* root) {
+    if (root == nullptr || (root->left == nullptr && root->right == nullptr))
+        return 0;
+    
+    return 1 + countInternal(root->left) + countInternal(root->right);
 }
 
 // Sum of all nodes
@@ -208,27 +227,34 @@ void displayTreeInfo(Node* root, string treeName) {
     printTree(root);
     
     cout << "\nTree Statistics:" << endl;
-    cout << "Height: " << height(root) << endl;
-    cout << "Total nodes: " << countNodes(root) << endl;
-    cout << "Leaf nodes: " << countLeaves(root) << endl;
-    cout << "Sum of nodes: " << sumNodes(root) << endl;
-    cout << "Minimum value: " << findMin(root) << endl;
-    cout << "Maximum value: " << findMax(root) << endl;
+    cout << "  Height: " << height(root) << endl;
+    cout << "  Total nodes: " << countNodes(root) << endl;
+    cout << "  Leaf nodes: " << countLeaves(root) << endl;
+    cout << "  Internal nodes: " << countInternal(root) << endl;
+    cout << "  Sum of nodes: " << sumNodes(root) << endl;
+    cout << "  Minimum value: " << findMin(root) << endl;
+    cout << "  Maximum value: " << findMax(root) << endl;
+    
+    int total = countNodes(root);
+    if (total > 0) {
+        cout << "  Average value: " << fixed << setprecision(2) 
+             << (double)sumNodes(root) / total << endl;
+    }
     
     cout << "\nTree Traversals:" << endl;
-    cout << "Inorder: ";
+    cout << "  Inorder: ";
     inorder(root);
     cout << endl;
     
-    cout << "Preorder: ";
+    cout << "  Preorder: ";
     preorder(root);
     cout << endl;
     
-    cout << "Postorder: ";
+    cout << "  Postorder: ";
     postorder(root);
     cout << endl;
     
-    cout << "Level Order: ";
+    cout << "  Level Order: ";
     levelOrder(root);
     cout << endl;
     
@@ -240,13 +266,18 @@ void displayTreeInfo(Node* root, string treeName) {
     
     // Search test
     cout << "\nSearch Tests:" << endl;
-    cout << "Search 3: " << (search(root, 3) ? "Found" : "Not Found") << endl;
-    cout << "Search 5: " << (search(root, 5) ? "Found" : "Not Found") << endl;
+    cout << "  Search 3: " << (search(root, 3) ? "✓ Found" : "✗ Not Found") << endl;
+    cout << "  Search 5: " << (search(root, 5) ? "✓ Found" : "✗ Not Found") << endl;
+    
+    cout << "\nComplexity Analysis:" << endl;
+    cout << "  Time Complexity (Symmetry Check): O(n)" << endl;
+    cout << "  Space Complexity: O(h) where h = height" << endl;
 }
 
 int main() {
     cout << "========================================" << endl;
     cout << "    Symmetric Binary Tree Program      " << endl;
+    cout << "      Complete DSA Implementation      " << endl;
     cout << "========================================" << endl;
     
     // Test Case 1: Symmetric tree
@@ -273,6 +304,15 @@ int main() {
     Node* tree3 = createNode(1);
     
     displayTreeInfo(tree3, "Test Case 3: Single Node Tree");
+    
+    // Memory cleanup
+    cout << "\n========================================" << endl;
+    cout << "Cleaning up memory..." << endl;
+    deleteTree(tree1);
+    deleteTree(tree2);
+    deleteTree(tree3);
+    cout << "Memory cleanup complete!" << endl;
+    cout << "========================================" << endl;
     
     return 0;
 }
