@@ -50,6 +50,37 @@ int countLeaves(Node* root) {
     return countLeaves(root->left) + countLeaves(root->right);
 }
 
+// Print tree structure
+void printTree(Node* root, string indent = "", bool isRight = true) {
+    if (root == nullptr)
+        return;
+    
+    cout << indent;
+    if (isRight) {
+        cout << "R----";
+        indent += "     ";
+    } else {
+        cout << "L----";
+        indent += "|    ";
+    }
+    
+    cout << root->data << endl;
+    
+    if (root->left != nullptr || root->right != nullptr) {
+        if (root->left != nullptr)
+            printTree(root->left, indent, false);
+        else {
+            cout << indent << "L----" << "NULL" << endl;
+        }
+        
+        if (root->right != nullptr)
+            printTree(root->right, indent, true);
+        else {
+            cout << indent << "R----" << "NULL" << endl;
+        }
+    }
+}
+
 // Inorder traversal (Left, Root, Right)
 void inorder(Node* root) {
     if (root == nullptr)
@@ -131,6 +162,9 @@ void displayTreeInfo(Node* root, string treeName) {
     cout << "\n========================================" << endl;
     cout << "  " << treeName << endl;
     cout << "========================================" << endl;
+    
+    cout << "\nTree Structure:" << endl;
+    printTree(root);
     
     cout << "\nTree Statistics:" << endl;
     cout << "Height: " << height(root) << endl;
