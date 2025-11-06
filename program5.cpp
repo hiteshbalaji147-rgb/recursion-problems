@@ -50,6 +50,47 @@ int countLeaves(Node* root) {
     return countLeaves(root->left) + countLeaves(root->right);
 }
 
+// Sum of all nodes
+int sumNodes(Node* root) {
+    if (root == nullptr)
+        return 0;
+    
+    return root->data + sumNodes(root->left) + sumNodes(root->right);
+}
+
+// Search for a value
+bool search(Node* root, int value) {
+    if (root == nullptr)
+        return false;
+    
+    if (root->data == value)
+        return true;
+    
+    return search(root->left, value) || search(root->right, value);
+}
+
+// Find minimum value
+int findMin(Node* root) {
+    if (root == nullptr)
+        return INT_MAX;
+    
+    int leftMin = findMin(root->left);
+    int rightMin = findMin(root->right);
+    
+    return min(root->data, min(leftMin, rightMin));
+}
+
+// Find maximum value
+int findMax(Node* root) {
+    if (root == nullptr)
+        return INT_MIN;
+    
+    int leftMax = findMax(root->left);
+    int rightMax = findMax(root->right);
+    
+    return max(root->data, max(leftMax, rightMax));
+}
+
 // Print tree structure
 void printTree(Node* root, string indent = "", bool isRight = true) {
     if (root == nullptr)
@@ -170,6 +211,9 @@ void displayTreeInfo(Node* root, string treeName) {
     cout << "Height: " << height(root) << endl;
     cout << "Total nodes: " << countNodes(root) << endl;
     cout << "Leaf nodes: " << countLeaves(root) << endl;
+    cout << "Sum of nodes: " << sumNodes(root) << endl;
+    cout << "Minimum value: " << findMin(root) << endl;
+    cout << "Maximum value: " << findMax(root) << endl;
     
     cout << "\nTree Traversals:" << endl;
     cout << "Inorder: ";
@@ -193,6 +237,11 @@ void displayTreeInfo(Node* root, string treeName) {
         cout << "✓ Tree is SYMMETRIC!" << endl;
     else
         cout << "✗ Tree is NOT symmetric!" << endl;
+    
+    // Search test
+    cout << "\nSearch Tests:" << endl;
+    cout << "Search 3: " << (search(root, 3) ? "Found" : "Not Found") << endl;
+    cout << "Search 5: " << (search(root, 5) ? "Found" : "Not Found") << endl;
 }
 
 int main() {
