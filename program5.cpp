@@ -19,6 +19,36 @@ Node* createNode(int data) {
     return new Node(data);
 }
 
+// Calculate height of tree
+int height(Node* root) {
+    if (root == nullptr)
+        return 0;
+    
+    int leftHeight = height(root->left);
+    int rightHeight = height(root->right);
+    
+    return 1 + max(leftHeight, rightHeight);
+}
+
+// Count total nodes
+int countNodes(Node* root) {
+    if (root == nullptr)
+        return 0;
+    
+    return 1 + countNodes(root->left) + countNodes(root->right);
+}
+
+// Count leaf nodes
+int countLeaves(Node* root) {
+    if (root == nullptr)
+        return 0;
+    
+    if (root->left == nullptr && root->right == nullptr)
+        return 1;
+    
+    return countLeaves(root->left) + countLeaves(root->right);
+}
+
 // Inorder traversal (Left, Root, Right)
 void inorder(Node* root) {
     if (root == nullptr)
@@ -86,6 +116,11 @@ int main() {
     root->left->right = createNode(4);
     root->right->left = createNode(4);
     root->right->right = createNode(3);
+    
+    cout << "\nTree Statistics:" << endl;
+    cout << "Height: " << height(root) << endl;
+    cout << "Total nodes: " << countNodes(root) << endl;
+    cout << "Leaf nodes: " << countLeaves(root) << endl;
     
     cout << "\nTree Traversals:" << endl;
     cout << "Inorder: ";
