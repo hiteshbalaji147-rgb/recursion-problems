@@ -1,9 +1,13 @@
 #include <iostream>
 #include <stack>
 #include <vector>
+#include <chrono>
 using namespace std;
+using namespace chrono;
 
 int moveCount = 0;
+int recursionDepth = 0;
+int maxRecursionDepth = 0;
 stack<int> towerA, towerB, towerC;
 
 // Display current state of towers
@@ -44,6 +48,11 @@ stack<int>& getTower(char tower) {
 
 // Solve Tower of Hanoi puzzle with visualization
 void towerOfHanoi(int n, char source, char destination, char auxiliary, bool visualize) {
+    recursionDepth++;
+    if (recursionDepth > maxRecursionDepth) {
+        maxRecursionDepth = recursionDepth;
+    }
+    
     // Base case: only one disk to move
     if (n == 1) {
         moveCount++;
@@ -55,11 +64,14 @@ void towerOfHanoi(int n, char source, char destination, char auxiliary, bool vis
         src.pop();
         dest.push(disk);
         
-        cout << "\nMove " << moveCount << ": Move disk " << disk << " from " << source << " to " << destination << endl;
+        cout << "\nMove " << moveCount << ": Move disk " << disk << " from " << source << " to " << destination;
+        cout << " [Depth: " << recursionDepth << "]" << endl;
         
         if (visualize) {
             displayTowers(towerA.size() + towerB.size() + towerC.size());
         }
+        
+        recursionDepth--;
         return;
     }
     
@@ -74,7 +86,8 @@ void towerOfHanoi(int n, char source, char destination, char auxiliary, bool vis
     src.pop();
     dest.push(disk);
     
-    cout << "\nMove " << moveCount << ": Move disk " << disk << " from " << source << " to " << destination << endl;
+    cout << "\nMove " << moveCount << ": Move disk " << disk << " from " << source << " to " << destination;
+    cout << " [Depth: " << recursionDepth << "]" << endl;
     
     if (visualize) {
         displayTowers(towerA.size() + towerB.size() + towerC.size());
@@ -82,6 +95,8 @@ void towerOfHanoi(int n, char source, char destination, char auxiliary, bool vis
     
     // Move n-1 disks from auxiliary to destination using source
     towerOfHanoi(n - 1, auxiliary, destination, source, visualize);
+    
+    recursionDepth--;
 }
 
 int main() {
@@ -121,11 +136,24 @@ int main() {
     
     cout << "\nSolution:" << endl;
     moveCount = 0;
+    recursionDepth = 0;
+    maxRecursionDepth = 0;
+    
+    auto start = high_resolution_clock::now();
     towerOfHanoi(n, 'A', 'C', 'B', visualize);
+    auto end = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(end - start);
     
     cout << "\n========================================" << endl;
-    cout << "Total moves: " << moveCount << endl;
-    cout << "Expected moves: " << (1 << n) - 1 << endl;
+    cout << "Performance Metrics:" << endl;
+    cout << "  Total moves: " << moveCount << endl;
+    cout << "  Expected moves: " << (1 << n) - 1 << endl;
+    cout << "  Max recursion depth: " << maxRecursionDepth << endl;
+    cout << "  Execution time: " << duration.count() << " microseconds" << endl;
+    cout << "  Time per move: " << (double)duration.count() / moveCount << " μs" << endl;
+    cout << "\nComplexity Analysis:" << endl;
+    cout << "  Time Complexity: O(2^n)" << endl;
+    cout << "  Space Complexity: O(n)" << endl;
     cout << "========================================" << endl;
     
     return 0;
