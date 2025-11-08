@@ -2,6 +2,7 @@
 #include <vector>
 #include <iomanip>
 #include <chrono>
+#include <fstream>
 using namespace std;
 using namespace chrono;
 
@@ -138,6 +139,33 @@ void displayBoardWithAttacks(vector<vector<int>>& board, int n) {
     }
 }
 
+// Export solution to file
+void exportSolution(vector<vector<int>>& board, int n, int solNum) {
+    ofstream file("nqueens_solution_" + to_string(n) + "_" + to_string(solNum) + ".txt");
+    
+    file << "N-Queens Solution (N=" << n << ", Solution #" << solNum << ")" << endl;
+    file << "========================================" << endl << endl;
+    
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            file << (board[i][j] ? "Q " : ". ");
+        }
+        file << endl;
+    }
+    
+    file << endl << "Queen positions (row, col):" << endl;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (board[i][j]) {
+                file << "(" << i << ", " << j << ") ";
+            }
+        }
+    }
+    file << endl;
+    
+    file.close();
+}
+
 // Find first solution (basic)
 bool solveNQueensFirst(vector<vector<int>>& board, int row, int n) {
     recursionCalls++;
@@ -188,7 +216,8 @@ bool solveNQueensOptimized(vector<vector<int>>& board, vector<bool>& cols,
 }
 
 // Find all solutions
-void solveNQueensAll(vector<vector<int>>& board, int row, int n, bool display, int displayStyle) {
+void solveNQueensAll(vector<vector<int>>& board, int row, int n, bool display, 
+                     int displayStyle, bool exportSol) {
     recursionCalls++;
     
     // Base case: all queens placed
@@ -207,6 +236,10 @@ void solveNQueensAll(vector<vector<int>>& board, int row, int n, bool display, i
                 displayBoardWithAttacks(board, n);
             }
         }
+        
+        if (exportSol) {
+            exportSolution(board, n, solutionCount);
+        }
         return;
     }
     
@@ -214,7 +247,7 @@ void solveNQueensAll(vector<vector<int>>& board, int row, int n, bool display, i
     for (int col = 0; col < n; col++) {
         if (isSafe(board, row, col, n)) {
             board[row][col] = 1;
-            solveNQueensAll(board, row + 1, n, display, displayStyle);
+            solveNQueensAll(board, row + 1, n, display, displayStyle, exportSol);
             board[row][col] = 0; // Backtrack
             backtrackCount++;
         }
@@ -228,11 +261,82 @@ int getKnownSolutionCount(int n) {
     return -1; // Unknown
 }
 
+// Compare algorithms
+void compareAlgorithms(int n) {
+    cout << "\n========================================" << endl;
+    cout << "    Algorithm Comparison (N=" << n << ")" << endl;
+    cout << "========================================" << endl;
+    
+    // Test 1: Basic backtracking
+    vector<vector<int>> board1(n, vector<int>(n, 0));
+    solutionCount = 0;
+    backtrackCount = 0;
+    recursionCalls = 0;
+    safetyChecks = 0;
+    
+    auto start1 = high_resolution_clock::now();
+    bool found1 = solveNQueensFirst(board1, 0, n);
+    auto end1 = high_resolution_clock::now();
+    auto duration1 = duration_cast<microseconds>(end1 - start1);
+    
+    int rec1 = recursionCalls, back1 = backtrackCount, safe1 = safetyChecks;
+    
+    // Test 2: Optimized
+    vector<vector<int>> board2(n, vector<int>(n, 0));
+    vector<bool> cols(n, false);
+    vector<bool> diag1(2 * n - 1, false);
+    vector<bool> diag2(2 * n - 1, false);
+    
+    solutionCount = 0;
+    backtrackCount = 0;
+    recursionCalls = 0;
+    safetyChecks = 0;
+    
+    auto start2 = high_resolution_clock::now();
+    bool found2 = solveNQueensOptimized(board2, cols, diag1, diag2, 0, n);
+    auto end2 = high_resolution_clock::now();
+    auto duration2 = duration_cast<microseconds>(end2 - start2);
+    
+    int rec2 = recursionCalls, back2 = backtrackCount, safe2 = safetyChecks;
+    
+    // Display comparison
+    cout << "\n" << left << setw(25) << "Metric" << setw(15) << "Basic" << setw(15) << "Optimized" << "Improvement" << endl;
+    cout << string(70, '-') << endl;
+    
+    cout << setw(25) << "Execution time (μs)" 
+         << setw(15) << duration1.count() 
+         << setw(15) << duration2.count()
+         << fixed << setprecision(2) << (double)duration1.count() / duration2.count() << "x" << endl;
+    
+    cout << setw(25) << "Recursion calls" 
+         << setw(15) << rec1 
+         << setw(15) << rec2
+         << fixed << setprecision(2) << (double)rec1 / rec2 << "x" << endl;
+    
+    cout << setw(25) << "Safety checks" 
+         << setw(15) << safe1 
+         << setw(15) << safe2
+         << fixed << setprecision(2) << (double)safe1 / safe2 << "x" << endl;
+    
+    cout << setw(25) << "Backtrack operations" 
+         << setw(15) << back1 
+         << setw(15) << back2
+         << fixed << setprecision(2) << (double)back1 / back2 << "x" << endl;
+    
+    cout << "\n========================================" << endl;
+    cout << "Winner: " << (duration2.count() < duration1.count() ? "Optimized" : "Basic") << " algorithm" << endl;
+    cout << "Speed improvement: " << fixed << setprecision(2) 
+         << ((double)duration1.count() / duration2.count() - 1) * 100 << "%" << endl;
+    cout << "========================================" << endl;
+}
+
 int main() {
     int n, choice, displayStyle, algorithm;
+    char exportChoice;
     
     cout << "========================================" << endl;
     cout << "         N-Queens Problem              " << endl;
+    cout << "      Complete DSA Implementation      " << endl;
     cout << "========================================" << endl;
     cout << "Enter board size (N): ";
     cin >> n;
@@ -255,6 +359,11 @@ int main() {
     cout << "Enter choice (1-4): ";
     cin >> choice;
     
+    if (choice == 4) {
+        compareAlgorithms(n);
+        return 0;
+    }
+    
     if (choice == 1) {
         cout << "\nAlgorithm:" << endl;
         cout << "1. Basic backtracking" << endl;
@@ -263,6 +372,7 @@ int main() {
         cin >> algorithm;
     }
     
+    bool exportSol = false;
     if (choice == 3) {
         cout << "\nDisplay style:" << endl;
         cout << "1. Simple (Q and .)" << endl;
@@ -270,6 +380,10 @@ int main() {
         cout << "3. Attack visualization" << endl;
         cout << "Enter style (1-3): ";
         cin >> displayStyle;
+        
+        cout << "Export solutions to files? (y/n): ";
+        cin >> exportChoice;
+        exportSol = (exportChoice == 'y' || exportChoice == 'Y');
     }
     
     vector<vector<int>> board(n, vector<int>(n, 0));
@@ -323,7 +437,7 @@ int main() {
         
         cout << "\nFinding all solutions..." << endl;
         auto start = high_resolution_clock::now();
-        solveNQueensAll(board, 0, n, choice == 3, displayStyle);
+        solveNQueensAll(board, 0, n, choice == 3, displayStyle, exportSol);
         auto end = high_resolution_clock::now();
         auto duration = duration_cast<microseconds>(end - start);
         
@@ -347,9 +461,15 @@ int main() {
         cout << "  Backtrack operations: " << backtrackCount << endl;
         cout << "  Solutions per second: " << fixed << setprecision(0) 
              << (solutionCount * 1000000.0) / duration.count() << endl;
+        
+        if (exportSol) {
+            cout << "\n  Solutions exported to files!" << endl;
+        }
+        
         cout << "\nComplexity Analysis:" << endl;
         cout << "  Time Complexity: O(N!)" << endl;
         cout << "  Space Complexity: O(N²)" << endl;
+        cout << "  Backtracking: Prunes invalid branches" << endl;
         cout << "========================================" << endl;
     }
     
