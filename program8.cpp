@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <chrono>
 #include <map>
+#include <algorithm>
 using namespace std;
 using namespace chrono;
 
@@ -80,6 +81,72 @@ bool isSubsetSumDP(vector<int>& arr, int n, int sum) {
     }
     
     return dp[n][sum];
+}
+
+// Reconstruct subset from DP table
+vector<int> reconstructSubset(vector<int>& arr, int n, int sum) {
+    vector<vector<bool>> dp(n + 1, vector<bool>(sum + 1, false));
+    
+    for (int i = 0; i <= n; i++)
+        dp[i][0] = true;
+    
+    for (int i = 1; i <= n; i++) {
+        for (int j = 1; j <= sum; j++) {
+            if (arr[i - 1] > j) {
+                dp[i][j] = dp[i - 1][j];
+            } else {
+                dp[i][j] = dp[i - 1][j] || dp[i - 1][j - arr[i - 1]];
+            }
+        }
+    }
+    
+    // Backtrack to find the subset
+    vector<int> subset;
+    int i = n, j = sum;
+    
+    while (i > 0 && j > 0) {
+        // If value comes from top, element not included
+        if (dp[i - 1][j]) {
+            i--;
+        } else {
+            // Element included
+            subset.push_back(arr[i - 1]);
+            j -= arr[i - 1];
+            i--;
+        }
+    }
+    
+    return subset;
+}
+
+// Find all possible sums
+vector<int> findAllPossibleSums(vector<int>& arr, int n) {
+    int totalSum = 0;
+    for (int x : arr) totalSum += x;
+    
+    vector<vector<bool>> dp(n + 1, vector<bool>(totalSum + 1, false));
+    
+    for (int i = 0; i <= n; i++)
+        dp[i][0] = true;
+    
+    for (int i = 1; i <= n; i++) {
+        for (int j = 1; j <= totalSum; j++) {
+            if (arr[i - 1] > j) {
+                dp[i][j] = dp[i - 1][j];
+            } else {
+                dp[i][j] = dp[i - 1][j] || dp[i - 1][j - arr[i - 1]];
+            }
+        }
+    }
+    
+    vector<int> possibleSums;
+    for (int j = 1; j <= totalSum; j++) {
+        if (dp[n][j]) {
+            possibleSums.push_back(j);
+        }
+    }
+    
+    return possibleSums;
 }
 
 // Print DP table
@@ -181,6 +248,7 @@ int main() {
     
     cout << "========================================" << endl;
     cout << "        Subset Sum Problem             " << endl;
+    cout << "     Complete DSA Implementation       " << endl;
     cout << "========================================" << endl;
     
     cout << "Enter number of elements: ";
@@ -211,8 +279,10 @@ int main() {
     cout << "3. Check if subset exists (Dynamic Programming)" << endl;
     cout << "4. Find all subsets" << endl;
     cout << "5. Show DP table" << endl;
-    cout << "6. Compare all algorithms" << endl;
-    cout << "Enter choice (1-6): ";
+    cout << "6. Reconstruct one subset" << endl;
+    cout << "7. Find all possible sums" << endl;
+    cout << "8. Compare all algorithms" << endl;
+    cout << "Enter choice (1-8): ";
     cin >> choice;
     
     cout << "\n========================================" << endl;
@@ -220,6 +290,16 @@ int main() {
     cout << "  Array: ";
     printArray(arr);
     cout << "\n  Target sum: " << target << endl;
+    
+    // Calculate array statistics
+    int totalSum = 0, minVal = arr[0], maxVal = arr[0];
+    for (int x : arr) {
+        totalSum += x;
+        minVal = min(minVal, x);
+        maxVal = max(maxVal, x);
+    }
+    cout << "  Array sum: " << totalSum << endl;
+    cout << "  Range: [" << minVal << ", " << maxVal << "]" << endl;
     cout << "========================================" << endl;
     
     if (choice == 1) {
@@ -231,9 +311,9 @@ int main() {
         auto duration = duration_cast<microseconds>(end - start);
         
         if (result) {
-            cout << "\nResult: Subset with sum " << target << " EXISTS!" << endl;
+            cout << "\nResult: Subset with sum " << target << " EXISTS! ✓" << endl;
         } else {
-            cout << "\nResult: Subset with sum " << target << " DOES NOT EXIST!" << endl;
+            cout << "\nResult: Subset with sum " << target << " DOES NOT EXIST! ✗" << endl;
         }
         
         cout << "\nPerformance Metrics:" << endl;
@@ -252,9 +332,9 @@ int main() {
         auto duration = duration_cast<microseconds>(end - start);
         
         if (result) {
-            cout << "\nResult: Subset with sum " << target << " EXISTS!" << endl;
+            cout << "\nResult: Subset with sum " << target << " EXISTS! ✓" << endl;
         } else {
-            cout << "\nResult: Subset with sum " << target << " DOES NOT EXIST!" << endl;
+            cout << "\nResult: Subset with sum " << target << " DOES NOT EXIST! ✗" << endl;
         }
         
         cout << "\nPerformance Metrics:" << endl;
@@ -273,14 +353,15 @@ int main() {
         auto duration = duration_cast<microseconds>(end - start);
         
         if (result) {
-            cout << "\nResult: Subset with sum " << target << " EXISTS!" << endl;
+            cout << "\nResult: Subset with sum " << target << " EXISTS! ✓" << endl;
         } else {
-            cout << "\nResult: Subset with sum " << target << " DOES NOT EXIST!" << endl;
+            cout << "\nResult: Subset with sum " << target << " DOES NOT EXIST! ✗" << endl;
         }
         
         cout << "\nPerformance Metrics:" << endl;
         cout << "  Execution time: " << duration.count() << " μs" << endl;
-        cout << "  DP table size: " << (n + 1) << " × " << (target + 1) << endl;
+        cout << "  DP table size: " << (n + 1) << " × " << (target + 1) 
+             << " = " << (n + 1) * (target + 1) << " cells" << endl;
         cout << "  Time Complexity: O(n × sum)" << endl;
         cout << "  Space Complexity: O(n × sum)" << endl;
     } else if (choice == 4) {
@@ -318,11 +399,49 @@ int main() {
         printDPTable(arr, n, target);
         
         if (isSubsetSumDP(arr, n, target)) {
-            cout << "\nResult: Subset with sum " << target << " EXISTS!" << endl;
+            cout << "\nResult: Subset with sum " << target << " EXISTS! ✓" << endl;
         } else {
-            cout << "\nResult: Subset with sum " << target << " DOES NOT EXIST!" << endl;
+            cout << "\nResult: Subset with sum " << target << " DOES NOT EXIST! ✗" << endl;
         }
     } else if (choice == 6) {
+        if (isSubsetSumDP(arr, n, target)) {
+            cout << "\nReconstructing subset..." << endl;
+            vector<int> subset = reconstructSubset(arr, n, target);
+            
+            cout << "\nOne possible subset: ";
+            printArray(subset);
+            
+            // Verify
+            int sum = 0;
+            for (int x : subset) sum += x;
+            cout << "\nVerification: Sum = " << sum;
+            cout << (sum == target ? " ✓" : " ✗") << endl;
+        } else {
+            cout << "\nNo subset with sum " << target << " exists!" << endl;
+        }
+    } else if (choice == 7) {
+        cout << "\nFinding all possible sums..." << endl;
+        auto start = high_resolution_clock::now();
+        vector<int> possibleSums = findAllPossibleSums(arr, n);
+        auto end = high_resolution_clock::now();
+        auto duration = duration_cast<microseconds>(end - start);
+        
+        cout << "\nPossible sums (" << possibleSums.size() << " total):" << endl;
+        for (int i = 0; i < possibleSums.size(); i++) {
+            cout << possibleSums[i];
+            if (possibleSums[i] == target) cout << " ← TARGET";
+            if (i < possibleSums.size() - 1) cout << ", ";
+            if ((i + 1) % 15 == 0) cout << endl;
+        }
+        cout << endl;
+        
+        cout << "\nStatistics:" << endl;
+        cout << "  Total possible sums: " << possibleSums.size() << endl;
+        cout << "  Execution time: " << duration.count() << " μs" << endl;
+        cout << "  Target " << target << " is " 
+             << (find(possibleSums.begin(), possibleSums.end(), target) != possibleSums.end() 
+                 ? "POSSIBLE ✓" : "NOT POSSIBLE ✗") << endl;
+    } else if (choice == 8) {
         cout << "\n========================================" << endl;
         cout << "      Algorithm Comparison             " << endl;
         cout << "========================================" << endl;
@@ -353,9 +472,9 @@ int main() {
         auto duration3 = duration_cast<microseconds>(end3 - start3);
         
         cout << "\nResults:" << endl;
-        cout << "  Recursive: " << (result1 ? "EXISTS" : "DOES NOT EXIST") << endl;
-        cout << "  Memoization: " << (result2 ? "EXISTS" : "DOES NOT EXIST") << endl;
-        cout << "  DP: " << (result3 ? "EXISTS" : "DOES NOT EXIST") << endl;
+        cout << "  Recursive: " << (result1 ? "EXISTS ✓" : "DOES NOT EXIST ✗") << endl;
+        cout << "  Memoization: " << (result2 ? "EXISTS ✓" : "DOES NOT EXIST ✗") << endl;
+        cout << "  DP: " << (result3 ? "EXISTS ✓" : "DOES NOT EXIST ✗") << endl;
         cout << "  All match: " << (result1 == result2 && result2 == result3 ? "✓" : "✗") << endl;
         
         cout << "\nPerformance Comparison:" << endl;
@@ -378,7 +497,7 @@ int main() {
              << setw(15) << hits2 
              << "N/A" << endl;
         
-        cout << setw(25) << "Space used" 
+        cout << setw(25) << "Space used (cells)" 
              << setw(15) << "O(n)" 
              << setw(15) << memo.size() 
              << (n + 1) * (target + 1) << endl;
@@ -391,7 +510,16 @@ int main() {
         cout << "\n========================================" << endl;
         cout << "Winner: " << winner << " algorithm" << endl;
         cout << "Speedup over recursive: " << fixed << setprecision(2) 
-             << (double)duration1.count() / fastest << "x" << endl;
+             << (double)duration1.count() / fastest << "x faster" << endl;
+        
+        cout << "\nRecommendations:" << endl;
+        if (n <= 15) {
+            cout << "  • Small input: All algorithms work well" << endl;
+        } else if (target <= 100) {
+            cout << "  • Use Memoization or DP for better performance" << endl;
+        } else {
+            cout << "  • Use DP for large target sums" << endl;
+        }
         cout << "========================================" << endl;
     }
     
