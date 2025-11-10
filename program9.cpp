@@ -2,10 +2,26 @@
 #include <vector>
 #include <stack>
 #include <cmath>
+#include <chrono>
+#include <iomanip>
 using namespace std;
+using namespace chrono;
 
 int moveCount = 0;
 int recursionCalls = 0;
+
+// Move statistics
+struct MoveStats {
+    int disk1Moves = 0;
+    int disk2Moves = 0;
+    int disk3Moves = 0;
+    int otherMoves = 0;
+    int AtoB = 0, AtoC = 0;
+    int BtoA = 0, BtoC = 0;
+    int CtoA = 0, CtoB = 0;
+};
+
+MoveStats stats;
 
 // Tower structure
 struct Tower {
@@ -24,6 +40,23 @@ Tower* getTower(char name) {
     if (name == 'B') return &towerB;
     if (name == 'C') return &towerC;
     return nullptr;
+}
+
+// Update move statistics
+void updateStats(char from, char to, int disk) {
+    // Track disk moves
+    if (disk == 1) stats.disk1Moves++;
+    else if (disk == 2) stats.disk2Moves++;
+    else if (disk == 3) stats.disk3Moves++;
+    else stats.otherMoves++;
+    
+    // Track direction
+    if (from == 'A' && to == 'B') stats.AtoB++;
+    else if (from == 'A' && to == 'C') stats.AtoC++;
+    else if (from == 'B' && to == 'A') stats.BtoA++;
+    else if (from == 'B' && to == 'C') stats.BtoC++;
+    else if (from == 'C' && to == 'A') stats.CtoA++;
+    else if (from == 'C' && to == 'B') stats.CtoB++;
 }
 
 // Print graphical tower representation
@@ -145,6 +178,8 @@ void moveDisk(char from, char to, int diskNum, bool visualize, int maxDisks, boo
         dest->disks.push(disk);
         
         moveCount++;
+        updateStats(from, to, diskNum);
+        
         cout << "\nMove " << moveCount << ": Move disk " << diskNum 
              << " from Tower " << from << " to Tower " << to << endl;
         
@@ -161,6 +196,7 @@ void towerOfHanoiBasic(int n, char source, char destination, char auxiliary) {
     // Base case: only one disk to move
     if (n == 1) {
         moveCount++;
+        updateStats(source, destination, 1);
         cout << "Move " << moveCount << ": Move disk 1 from " << source 
              << " to " << destination << endl;
         return;
@@ -171,6 +207,7 @@ void towerOfHanoiBasic(int n, char source, char destination, char auxiliary) {
     
     // Move the nth disk from source to destination
     moveCount++;
+    updateStats(source, destination, n);
     cout << "Move " << moveCount << ": Move disk " << n << " from " << source 
          << " to " << destination << endl;
     
@@ -225,12 +262,14 @@ void towerOfHanoiIterative(int n) {
                 int disk = source.disks.top();
                 source.disks.pop();
                 dest.disks.push(disk);
+                updateStats(source.name, dest.name, disk);
                 cout << "Move " << i << ": Move disk " << disk << " from " << source.name 
                      << " to " << dest.name << endl;
             } else {
                 int disk = dest.disks.top();
                 dest.disks.pop();
                 source.disks.push(disk);
+                updateStats(dest.name, source.name, disk);
                 cout << "Move " << i << ": Move disk " << disk << " from " << dest.name 
                      << " to " << source.name << endl;
             }
@@ -240,12 +279,14 @@ void towerOfHanoiIterative(int n) {
                 int disk = source.disks.top();
                 source.disks.pop();
                 aux.disks.push(disk);
+                updateStats(source.name, aux.name, disk);
                 cout << "Move " << i << ": Move disk " << disk << " from " << source.name 
                      << " to " << aux.name << endl;
             } else {
                 int disk = aux.disks.top();
                 aux.disks.pop();
                 source.disks.push(disk);
+                updateStats(aux.name, source.name, disk);
                 cout << "Move " << i << ": Move disk " << disk << " from " << aux.name 
                      << " to " << source.name << endl;
             }
@@ -255,17 +296,48 @@ void towerOfHanoiIterative(int n) {
                 int disk = aux.disks.top();
                 aux.disks.pop();
                 dest.disks.push(disk);
+                updateStats(aux.name, dest.name, disk);
                 cout << "Move " << i << ": Move disk " << disk << " from " << aux.name 
                      << " to " << dest.name << endl;
             } else {
                 int disk = dest.disks.top();
                 dest.disks.pop();
                 aux.disks.push(disk);
+                updateStats(dest.name, aux.name, disk);
                 cout << "Move " << i << ": Move disk " << disk << " from " << dest.name 
                      << " to " << aux.name << endl;
             }
         }
     }
+}
+
+// Print move pattern analysis
+void printMoveAnalysis(int n) {
+    cout << "\n========================================" << endl;
+    cout << "       Move Pattern Analysis           " << endl;
+    cout << "========================================" << endl;
+    
+    cout << "\nDisk Movement Frequency:" << endl;
+    if (n >= 1) cout << "  Disk 1: " << stats.disk1Moves << " moves" << endl;
+    if (n >= 2) cout << "  Disk 2: " << stats.disk2Moves << " moves" << endl;
+    if (n >= 3) cout << "  Disk 3: " << stats.disk3Moves << " moves" << endl;
+    if (n > 3) cout << "  Other disks: " << stats.otherMoves << " moves" << endl;
+    
+    cout << "\nDirection Statistics:" << endl;
+    cout << "  A → B: " << stats.AtoB << " moves" << endl;
+    cout << "  A → C: " << stats.AtoC << " moves" << endl;
+    cout << "  B → A: " << stats.BtoA << " moves" << endl;
+    cout << "  B → C: " << stats.BtoC << " moves" << endl;
+    cout << "  C → A: " << stats.CtoA << " moves" << endl;
+    cout << "  C → B: " << stats.CtoB << " moves" << endl;
+    
+    cout << "\nPattern Observations:" << endl;
+    cout << "  • Disk 1 moves most frequently: " << stats.disk1Moves << " times" << endl;
+    if (n >= 2) {
+        cout << "  • Disk 2 moves: " << stats.disk2Moves << " times (half of disk 1)" << endl;
+    }
+    cout << "  • Larger disks move exponentially less" << endl;
+    cout << "========================================" << endl;
 }
 
 // Initialize towers
@@ -279,6 +351,13 @@ void initializeTowers(int n) {
     for (int i = n; i >= 1; i--) {
         towerA.disks.push(i);
     }
+}
+
+// Reset statistics
+void resetStats() {
+    stats = MoveStats();
+    moveCount = 0;
+    recursionCalls = 0;
 }
 
 int main() {
@@ -306,7 +385,8 @@ int main() {
     cout << "2. Show moves with simple visualization (Recursive)" << endl;
     cout << "3. Show moves with graphical visualization (Recursive)" << endl;
     cout << "4. Iterative solution" << endl;
-    cout << "Enter choice (1-4): ";
+    cout << "5. Compare Recursive vs Iterative" << endl;
+    cout << "Enter choice (1-5): ";
     cin >> choice;
     
     cout << "\n========================================" << endl;
@@ -315,23 +395,28 @@ int main() {
     cout << "========================================" << endl;
     
     if (choice == 1) {
-        moveCount = 0;
-        recursionCalls = 0;
+        resetStats();
         
         cout << "\nMoves:" << endl;
         cout << "------" << endl;
+        
+        auto start = high_resolution_clock::now();
         towerOfHanoiBasic(n, 'A', 'C', 'B');
+        auto end = high_resolution_clock::now();
+        auto duration = duration_cast<microseconds>(end - start);
         
         cout << "\n========================================" << endl;
-        cout << "Statistics:" << endl;
+        cout << "Performance Metrics:" << endl;
+        cout << "  Execution time: " << duration.count() << " μs" << endl;
         cout << "  Total moves: " << moveCount << endl;
         cout << "  Expected moves: " << (1 << n) - 1 << " (2^" << n << " - 1)" << endl;
         cout << "  Recursion calls: " << recursionCalls << endl;
         cout << "  Match: " << (moveCount == (1 << n) - 1 ? "✓" : "✗") << endl;
         cout << "========================================" << endl;
+        
+        printMoveAnalysis(n);
     } else if (choice == 2 || choice == 3) {
-        moveCount = 0;
-        recursionCalls = 0;
+        resetStats();
         bool graphical = (choice == 3);
         
         // Initialize towers
@@ -341,27 +426,80 @@ int main() {
         printAllTowers(n, graphical);
         
         cout << "\nSolving..." << endl;
+        
+        auto start = high_resolution_clock::now();
         towerOfHanoiVisualized(n, 'A', 'C', 'B', true, n, graphical);
+        auto end = high_resolution_clock::now();
+        auto duration = duration_cast<microseconds>(end - start);
         
         cout << "\n========================================" << endl;
         cout << "Final State:" << endl;
         printAllTowers(n, graphical);
         
         cout << "\n========================================" << endl;
-        cout << "Statistics:" << endl;
+        cout << "Performance Metrics:" << endl;
+        cout << "  Execution time: " << duration.count() << " μs" << endl;
         cout << "  Total moves: " << moveCount << endl;
         cout << "  Expected moves: " << (1 << n) - 1 << " (2^" << n << " - 1)" << endl;
         cout << "  Recursion calls: " << recursionCalls << endl;
         cout << "  Match: " << (moveCount == (1 << n) - 1 ? "✓" : "✗") << endl;
         cout << "========================================" << endl;
+        
+        printMoveAnalysis(n);
     } else if (choice == 4) {
+        resetStats();
+        
+        auto start = high_resolution_clock::now();
         towerOfHanoiIterative(n);
+        auto end = high_resolution_clock::now();
+        auto duration = duration_cast<microseconds>(end - start);
         
         cout << "\n========================================" << endl;
-        cout << "Statistics:" << endl;
+        cout << "Performance Metrics:" << endl;
+        cout << "  Execution time: " << duration.count() << " μs" << endl;
         cout << "  Total moves: " << (1 << n) - 1 << endl;
         cout << "  Algorithm: Iterative (no recursion)" << endl;
         cout << "  Space Complexity: O(n)" << endl;
+        cout << "========================================" << endl;
+        
+        printMoveAnalysis(n);
+    } else if (choice == 5) {
+        cout << "\n========================================" << endl;
+        cout << "   Recursive vs Iterative Comparison   " << endl;
+        cout << "========================================" << endl;
+        
+        // Test Recursive
+        resetStats();
+        auto start1 = high_resolution_clock::now();
+        towerOfHanoiBasic(n, 'A', 'C', 'B');
+        auto end1 = high_resolution_clock::now();
+        auto duration1 = duration_cast<microseconds>(end1 - start1);
+        int recMoves = moveCount;
+        int recCalls = recursionCalls;
+        
+        // Test Iterative
+        resetStats();
+        auto start2 = high_resolution_clock::now();
+        towerOfHanoiIterative(n);
+        auto end2 = high_resolution_clock::now();
+        auto duration2 = duration_cast<microseconds>(end2 - start2);
+        
+        cout << "\nComparison Results:" << endl;
+        cout << left << setw(25) << "Metric" << setw(20) << "Recursive" << "Iterative" << endl;
+        cout << string(65, '-') << endl;
+        cout << setw(25) << "Execution time (μs)" << setw(20) << duration1.count() << duration2.count() << endl;
+        cout << setw(25) << "Total moves" << setw(20) << recMoves << (1 << n) - 1 << endl;
+        cout << setw(25) << "Recursion calls" << setw(20) << recCalls << "0" << endl;
+        cout << setw(25) << "Space complexity" << setw(20) << "O(n)" << "O(n)" << endl;
+        cout << setw(25) << "Time complexity" << setw(20) << "O(2^n)" << "O(2^n)" << endl;
+        
+        long long faster = min(duration1.count(), duration2.count());
+        string winner = (faster == duration1.count()) ? "Recursive" : "Iterative";
+        
+        cout << "\n========================================" << endl;
+        cout << "Winner: " << winner << " algorithm" << endl;
+        cout << "Speedup: " << fixed << setprecision(2) 
+             << (double)max(duration1.count(), duration2.count()) / faster << "x faster" << endl;
         cout << "========================================" << endl;
     }
     
