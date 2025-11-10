@@ -237,7 +237,7 @@ void towerOfHanoiVisualized(int n, char source, char destination, char auxiliary
 }
 
 // Iterative solution for Tower of Hanoi
-void towerOfHanoiIterative(int n) {
+void towerOfHanoiIterative(int n, bool showMoves = true) {
     // Calculate total moves
     int totalMoves = (1 << n) - 1;
     
@@ -252,8 +252,10 @@ void towerOfHanoiIterative(int n) {
         swap(dest.name, aux.name);
     }
     
-    cout << "\nIterative Solution:" << endl;
-    cout << "-------------------" << endl;
+    if (showMoves) {
+        cout << "\nIterative Solution:" << endl;
+        cout << "-------------------" << endl;
+    }
     
     for (int i = 1; i <= totalMoves; i++) {
         if (i % 3 == 1) {
@@ -263,15 +265,19 @@ void towerOfHanoiIterative(int n) {
                 source.disks.pop();
                 dest.disks.push(disk);
                 updateStats(source.name, dest.name, disk);
-                cout << "Move " << i << ": Move disk " << disk << " from " << source.name 
-                     << " to " << dest.name << endl;
+                if (showMoves) {
+                    cout << "Move " << i << ": Move disk " << disk << " from " << source.name 
+                         << " to " << dest.name << endl;
+                }
             } else {
                 int disk = dest.disks.top();
                 dest.disks.pop();
                 source.disks.push(disk);
                 updateStats(dest.name, source.name, disk);
-                cout << "Move " << i << ": Move disk " << disk << " from " << dest.name 
-                     << " to " << source.name << endl;
+                if (showMoves) {
+                    cout << "Move " << i << ": Move disk " << disk << " from " << dest.name 
+                         << " to " << source.name << endl;
+                }
             }
         } else if (i % 3 == 2) {
             // Move between source and auxiliary
@@ -280,15 +286,19 @@ void towerOfHanoiIterative(int n) {
                 source.disks.pop();
                 aux.disks.push(disk);
                 updateStats(source.name, aux.name, disk);
-                cout << "Move " << i << ": Move disk " << disk << " from " << source.name 
-                     << " to " << aux.name << endl;
+                if (showMoves) {
+                    cout << "Move " << i << ": Move disk " << disk << " from " << source.name 
+                         << " to " << aux.name << endl;
+                }
             } else {
                 int disk = aux.disks.top();
                 aux.disks.pop();
                 source.disks.push(disk);
                 updateStats(aux.name, source.name, disk);
-                cout << "Move " << i << ": Move disk " << disk << " from " << aux.name 
-                     << " to " << source.name << endl;
+                if (showMoves) {
+                    cout << "Move " << i << ": Move disk " << disk << " from " << aux.name 
+                         << " to " << source.name << endl;
+                }
             }
         } else {
             // Move between auxiliary and destination
@@ -297,15 +307,19 @@ void towerOfHanoiIterative(int n) {
                 aux.disks.pop();
                 dest.disks.push(disk);
                 updateStats(aux.name, dest.name, disk);
-                cout << "Move " << i << ": Move disk " << disk << " from " << aux.name 
-                     << " to " << dest.name << endl;
+                if (showMoves) {
+                    cout << "Move " << i << ": Move disk " << disk << " from " << aux.name 
+                         << " to " << dest.name << endl;
+                }
             } else {
                 int disk = dest.disks.top();
                 dest.disks.pop();
                 aux.disks.push(disk);
                 updateStats(dest.name, aux.name, disk);
-                cout << "Move " << i << ": Move disk " << disk << " from " << dest.name 
-                     << " to " << aux.name << endl;
+                if (showMoves) {
+                    cout << "Move " << i << ": Move disk " << disk << " from " << dest.name 
+                         << " to " << aux.name << endl;
+                }
             }
         }
     }
@@ -318,9 +332,9 @@ void printMoveAnalysis(int n) {
     cout << "========================================" << endl;
     
     cout << "\nDisk Movement Frequency:" << endl;
-    if (n >= 1) cout << "  Disk 1: " << stats.disk1Moves << " moves" << endl;
-    if (n >= 2) cout << "  Disk 2: " << stats.disk2Moves << " moves" << endl;
-    if (n >= 3) cout << "  Disk 3: " << stats.disk3Moves << " moves" << endl;
+    if (n >= 1) cout << "  Disk 1: " << stats.disk1Moves << " moves (2^" << (n-1) << " = " << (1 << (n-1)) << ")" << endl;
+    if (n >= 2) cout << "  Disk 2: " << stats.disk2Moves << " moves (2^" << (n-2) << " = " << (1 << (n-2)) << ")" << endl;
+    if (n >= 3) cout << "  Disk 3: " << stats.disk3Moves << " moves (2^" << (n-3) << " = " << (1 << (n-3)) << ")" << endl;
     if (n > 3) cout << "  Other disks: " << stats.otherMoves << " moves" << endl;
     
     cout << "\nDirection Statistics:" << endl;
@@ -332,11 +346,54 @@ void printMoveAnalysis(int n) {
     cout << "  C → B: " << stats.CtoB << " moves" << endl;
     
     cout << "\nPattern Observations:" << endl;
-    cout << "  • Disk 1 moves most frequently: " << stats.disk1Moves << " times" << endl;
+    cout << "  • Disk k moves exactly 2^(n-k) times" << endl;
+    cout << "  • Smallest disk (1) moves most: " << stats.disk1Moves << " times" << endl;
     if (n >= 2) {
-        cout << "  • Disk 2 moves: " << stats.disk2Moves << " times (half of disk 1)" << endl;
+        cout << "  • Each disk moves half as often as the one above it" << endl;
     }
-    cout << "  • Larger disks move exponentially less" << endl;
+    cout << "  • Total moves follow formula: 2^n - 1" << endl;
+    cout << "========================================" << endl;
+}
+
+// Print complexity analysis
+void printComplexityAnalysis(int n) {
+    cout << "\n========================================" << endl;
+    cout << "       Complexity Analysis             " << endl;
+    cout << "========================================" << endl;
+    
+    cout << "\nTime Complexity:" << endl;
+    cout << "  • Recurrence: T(n) = 2T(n-1) + 1" << endl;
+    cout << "  • Solution: T(n) = 2^n - 1" << endl;
+    cout << "  • For n=" << n << ": " << (1 << n) - 1 << " operations" << endl;
+    
+    cout << "\nSpace Complexity:" << endl;
+    cout << "  • Recursive: O(n) - call stack depth" << endl;
+    cout << "  • Iterative: O(n) - tower storage" << endl;
+    cout << "  • For n=" << n << ": " << n << " stack frames max" << endl;
+    
+    cout << "\nGrowth Rate:" << endl;
+    cout << "  n  |  Moves  |  Time (approx)" << endl;
+    cout << "  ---|---------|----------------" << endl;
+    for (int i = 1; i <= min(n + 3, 20); i++) {
+        long long moves = (1LL << i) - 1;
+        cout << "  " << setw(2) << i << " | " << setw(7) << moves << " | ";
+        if (moves < 60) {
+            cout << moves << " seconds" << endl;
+        } else if (moves < 3600) {
+            cout << (moves / 60) << " minutes" << endl;
+        } else if (moves < 86400) {
+            cout << (moves / 3600) << " hours" << endl;
+        } else if (moves < 31536000) {
+            cout << (moves / 86400) << " days" << endl;
+        } else {
+            cout << (moves / 31536000) << " years" << endl;
+        }
+    }
+    
+    cout << "\nReal-world Impact:" << endl;
+    cout << "  • 64 disks: 2^64 - 1 = 18,446,744,073,709,551,615 moves" << endl;
+    cout << "  • At 1 move/second: ~585 billion years!" << endl;
+    cout << "  • This demonstrates exponential growth" << endl;
     cout << "========================================" << endl;
 }
 
@@ -365,6 +422,7 @@ int main() {
     
     cout << "========================================" << endl;
     cout << "       Tower of Hanoi Problem          " << endl;
+    cout << "     Complete DSA Implementation       " << endl;
     cout << "========================================" << endl;
     
     cout << "Enter number of disks: ";
@@ -386,7 +444,8 @@ int main() {
     cout << "3. Show moves with graphical visualization (Recursive)" << endl;
     cout << "4. Iterative solution" << endl;
     cout << "5. Compare Recursive vs Iterative" << endl;
-    cout << "Enter choice (1-5): ";
+    cout << "6. Complexity analysis" << endl;
+    cout << "Enter choice (1-6): ";
     cin >> choice;
     
     cout << "\n========================================" << endl;
@@ -412,6 +471,8 @@ int main() {
         cout << "  Expected moves: " << (1 << n) - 1 << " (2^" << n << " - 1)" << endl;
         cout << "  Recursion calls: " << recursionCalls << endl;
         cout << "  Match: " << (moveCount == (1 << n) - 1 ? "✓" : "✗") << endl;
+        cout << "  Time Complexity: O(2^n)" << endl;
+        cout << "  Space Complexity: O(n)" << endl;
         cout << "========================================" << endl;
         
         printMoveAnalysis(n);
@@ -450,7 +511,7 @@ int main() {
         resetStats();
         
         auto start = high_resolution_clock::now();
-        towerOfHanoiIterative(n);
+        towerOfHanoiIterative(n, true);
         auto end = high_resolution_clock::now();
         auto duration = duration_cast<microseconds>(end - start);
         
@@ -459,6 +520,7 @@ int main() {
         cout << "  Execution time: " << duration.count() << " μs" << endl;
         cout << "  Total moves: " << (1 << n) - 1 << endl;
         cout << "  Algorithm: Iterative (no recursion)" << endl;
+        cout << "  Time Complexity: O(2^n)" << endl;
         cout << "  Space Complexity: O(n)" << endl;
         cout << "========================================" << endl;
         
@@ -480,7 +542,7 @@ int main() {
         // Test Iterative
         resetStats();
         auto start2 = high_resolution_clock::now();
-        towerOfHanoiIterative(n);
+        towerOfHanoiIterative(n, false);
         auto end2 = high_resolution_clock::now();
         auto duration2 = duration_cast<microseconds>(end2 - start2);
         
@@ -492,6 +554,7 @@ int main() {
         cout << setw(25) << "Recursion calls" << setw(20) << recCalls << "0" << endl;
         cout << setw(25) << "Space complexity" << setw(20) << "O(n)" << "O(n)" << endl;
         cout << setw(25) << "Time complexity" << setw(20) << "O(2^n)" << "O(2^n)" << endl;
+        cout << setw(25) << "Readability" << setw(20) << "High" << "Medium" << endl;
         
         long long faster = min(duration1.count(), duration2.count());
         string winner = (faster == duration1.count()) ? "Recursive" : "Iterative";
@@ -500,6 +563,26 @@ int main() {
         cout << "Winner: " << winner << " algorithm" << endl;
         cout << "Speedup: " << fixed << setprecision(2) 
              << (double)max(duration1.count(), duration2.count()) / faster << "x faster" << endl;
+        
+        cout << "\nRecommendations:" << endl;
+        cout << "  • Recursive: More intuitive and elegant" << endl;
+        cout << "  • Iterative: Avoids stack overflow for large n" << endl;
+        cout << "  • Both have same time/space complexity" << endl;
+        cout << "========================================" << endl;
+    } else if (choice == 6) {
+        printComplexityAnalysis(n);
+        
+        cout << "\nMathematical Properties:" << endl;
+        cout << "  • Minimum moves: 2^n - 1 (proven optimal)" << endl;
+        cout << "  • Disk k moves: 2^(n-k) times" << endl;
+        cout << "  • Recurrence: T(n) = 2T(n-1) + 1, T(1) = 1" << endl;
+        cout << "  • Closed form: T(n) = 2^n - 1" << endl;
+        
+        cout << "\nHistorical Context:" << endl;
+        cout << "  • Invented by Édouard Lucas in 1883" << endl;
+        cout << "  • Legend: 64 golden disks in temple" << endl;
+        cout << "  • World ends when puzzle solved!" << endl;
+        cout << "  • Classic example of recursion" << endl;
         cout << "========================================" << endl;
     }
     
