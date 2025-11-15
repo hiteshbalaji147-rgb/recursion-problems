@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <bitset>
 using namespace std;
 
 int solutionCount = 0;
@@ -124,8 +125,25 @@ void printBoard(vector<vector<int>>& board, int n) {
     }
 }
 
+// Print step-by-step board state
+void printStep(vector<vector<int>>& board, int n, int currentRow, int currentCol, bool placing) {
+    cout << "\n" << (placing ? "Placing" : "Removing") << " queen at (" << currentRow << ", " << currentCol << "):" << endl;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (i == currentRow && j == currentCol) {
+                cout << (placing ? "Q*" : "X ");
+            } else if (board[i][j] == 1) {
+                cout << "Q ";
+            } else {
+                cout << ". ";
+            }
+        }
+        cout << endl;
+    }
+}
+
 // Solve N-Queens using backtracking
-bool solveNQueens(vector<vector<int>>& board, int row, int n, bool findAll, bool showAttacks) {
+bool solveNQueens(vector<vector<int>>& board, int row, int n, bool findAll, bool showAttacks, bool stepByStep) {
     recursionCalls++;
     
     // Base case: all queens placed
@@ -148,8 +166,12 @@ bool solveNQueens(vector<vector<int>>& board, int row, int n, bool findAll, bool
             board[row][col] = 1;
             stats.queensPlaced++;
             
+            if (stepByStep) {
+                printStep(board, n, row, col, true);
+            }
+            
             // Recurse to place rest of queens
-            if (solveNQueens(board, row + 1, n, findAll, showAttacks)) {
+            if (solveNQueens(board, row + 1, n, findAll, showAttacks, stepByStep)) {
                 foundSolution = true;
                 if (!findAll) {
                     return true;  // Stop after first solution
@@ -157,12 +179,36 @@ bool solveNQueens(vector<vector<int>>& board, int row, int n, bool findAll, bool
             }
             
             // Backtrack: remove queen
+            if (stepByStep && (findAll || !foundSolution)) {
+                printStep(board, n, row, col, false);
+            }
             board[row][col] = 0;
             backtrackCount++;
         }
     }
     
     return foundSolution;
+}
+
+// Optimized solution using bitmasking
+int solveNQueensBitwise(int row, int n, int cols, int diag1, int diag2, bool countOnly) {
+    if (row == n) {
+        return 1;
+    }
+    
+    int count = 0;
+    int availablePositions = ((1 << n) - 1) & ~(cols | diag1 | diag2);
+    
+    while (availablePositions) {
+        int position = availablePositions & -availablePositions;  // Get rightmost bit
+        availablePositions -= position;  // Remove this bit
+        
+        count += solveNQueensBitwise(row + 1, n, cols | position, 
+                                      (diag1 | position) << 1, 
+                                      (diag2 | position) >> 1, countOnly);
+    }
+    
+    return count;
 }
 
 // Print statistics
@@ -177,6 +223,11 @@ void printStats(int n) {
     cout << "  - Safe positions: " << stats.safePositions << endl;
     cout << "  - Unsafe positions: " << stats.unsafePositions << endl;
     cout << "Queens placed (total): " << stats.queensPlaced << endl;
+    
+    // Calculate efficiency
+    double efficiency = (stats.totalChecks > 0) ? 
+                       (double)stats.safePositions / stats.totalChecks * 100 : 0;
+    cout << "Efficiency: " << efficiency << "% safe positions" << endl;
     cout << "========================================" << endl;
 }
 
@@ -204,28 +255,40 @@ int main() {
     cout << "1. Find first solution only" << endl;
     cout << "2. Find all solutions" << endl;
     cout << "3. Find all solutions with attack visualization" << endl;
-    cout << "Enter choice (1-3): ";
+    cout << "4. Step-by-step solution (first solution only)" << endl;
+    cout << "5. Count solutions only (optimized bitwise)" << endl;
+    cout << "Enter choice (1-5): ";
     cin >> choice;
-    
-    bool findAll = (choice == 2 || choice == 3);
-    bool showAttacks = (choice == 3);
-    
-    // Initialize board
-    vector<vector<int>> board(n, vector<int>(n, 0));
     
     cout << "\n========================================" << endl;
     cout << "Solving " << n << "-Queens Problem" << endl;
     cout << "========================================" << endl;
     
-    solutionCount = 0;
-    backtrackCount = 0;
-    recursionCalls = 0;
-    stats = Stats();
-    
-    if (solveNQueens(board, 0, n, findAll, showAttacks)) {
-        printStats(n);
+    if (choice == 5) {
+        // Optimized bitwise solution
+        int count = solveNQueensBitwise(0, n, 0, 0, 0, true);
+        cout << "\nTotal solutions: " << count << endl;
+        cout << "Algorithm: Optimized bitwise (no board storage)" << endl;
+        cout << "Space Complexity: O(n) - recursion stack only" << endl;
+        cout << "Time Complexity: O(n!) - but faster due to bitwise ops" << endl;
     } else {
-        cout << "\nNo solution exists!" << endl;
+        bool findAll = (choice == 2 || choice == 3);
+        bool showAttacks = (choice == 3);
+        bool stepByStep = (choice == 4);
+        
+        // Initialize board
+        vector<vector<int>> board(n, vector<int>(n, 0));
+        
+        solutionCount = 0;
+        backtrackCount = 0;
+        recursionCalls = 0;
+        stats = Stats();
+        
+        if (solveNQueens(board, 0, n, findAll, showAttacks, stepByStep)) {
+            printStats(n);
+        } else {
+            cout << "\nNo solution exists!" << endl;
+        }
     }
     
     return 0;
