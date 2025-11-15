@@ -1,7 +1,11 @@
 #include <iostream>
 #include <vector>
 #include <bitset>
+#include <chrono>
+#include <iomanip>
+#include <set>
 using namespace std;
+using namespace chrono;
 
 int solutionCount = 0;
 int backtrackCount = 0;
@@ -16,6 +20,9 @@ struct Stats {
 };
 
 Stats stats;
+
+// Store unique solutions
+set<vector<int>> uniqueSolutions;
 
 // Check if placing queen at (row, col) is safe
 bool isSafe(vector<vector<int>>& board, int row, int col, int n) {
@@ -47,6 +54,20 @@ bool isSafe(vector<vector<int>>& board, int row, int col, int n) {
     
     stats.safePositions++;
     return true;
+}
+
+// Convert board to solution vector (column position for each row)
+vector<int> boardToSolution(vector<vector<int>>& board, int n) {
+    vector<int> solution(n);
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (board[i][j] == 1) {
+                solution[i] = j;
+                break;
+            }
+        }
+    }
+    return solution;
 }
 
 // Mark attacked positions
@@ -123,6 +144,15 @@ void printBoard(vector<vector<int>>& board, int n) {
         }
         cout << endl;
     }
+    
+    // Print solution vector
+    vector<int> sol = boardToSolution(board, n);
+    cout << "Position vector: [";
+    for (int i = 0; i < n; i++) {
+        cout << sol[i];
+        if (i < n - 1) cout << ", ";
+    }
+    cout << "]" << endl;
 }
 
 // Print step-by-step board state
@@ -149,9 +179,12 @@ bool solveNQueens(vector<vector<int>>& board, int row, int n, bool findAll, bool
     // Base case: all queens placed
     if (row == n) {
         solutionCount++;
+        vector<int> sol = boardToSolution(board, n);
+        uniqueSolutions.insert(sol);
+        
         if (showAttacks) {
             printBoardWithAttacks(board, n);
-        } else {
+        } else if (!stepByStep) {
             printBoard(board, n);
         }
         return true;
@@ -217,6 +250,7 @@ void printStats(int n) {
     cout << "           Statistics                  " << endl;
     cout << "========================================" << endl;
     cout << "Total solutions: " << solutionCount << endl;
+    cout << "Unique solutions: " << uniqueSolutions.size() << endl;
     cout << "Recursion calls: " << recursionCalls << endl;
     cout << "Backtrack operations: " << backtrackCount << endl;
     cout << "Safety checks: " << stats.totalChecks << endl;
@@ -227,7 +261,77 @@ void printStats(int n) {
     // Calculate efficiency
     double efficiency = (stats.totalChecks > 0) ? 
                        (double)stats.safePositions / stats.totalChecks * 100 : 0;
-    cout << "Efficiency: " << efficiency << "% safe positions" << endl;
+    cout << "Efficiency: " << fixed << setprecision(2) << efficiency << "% safe positions" << endl;
+    
+    // Average backtracks per solution
+    if (solutionCount > 0) {
+        cout << "Avg backtracks per solution: " << (double)backtrackCount / solutionCount << endl;
+    }
+    cout << "========================================" << endl;
+}
+
+// Known solution counts for N-Queens
+int getKnownSolutionCount(int n) {
+    int knownCounts[] = {0, 1, 0, 0, 2, 10, 4, 40, 92, 352, 724, 2680, 14200, 73712, 365596};
+    if (n < 15) return knownCounts[n];
+    return -1;  // Unknown
+}
+
+// Compare algorithms
+void compareAlgorithms(int n) {
+    cout << "\n========================================" << endl;
+    cout << "    Algorithm Performance Comparison   " << endl;
+    cout << "========================================" << endl;
+    
+    // Test standard backtracking
+    vector<vector<int>> board(n, vector<int>(n, 0));
+    solutionCount = 0;
+    backtrackCount = 0;
+    recursionCalls = 0;
+    stats = Stats();
+    uniqueSolutions.clear();
+    
+    auto start1 = high_resolution_clock::now();
+    solveNQueens(board, 0, n, true, false, false);
+    auto end1 = high_resolution_clock::now();
+    auto duration1 = duration_cast<microseconds>(end1 - start1);
+    
+    int standardSolutions = solutionCount;
+    int standardRecursions = recursionCalls;
+    int standardBacktracks = backtrackCount;
+    
+    // Test bitwise solution
+    auto start2 = high_resolution_clock::now();
+    int bitwiseSolutions = solveNQueensBitwise(0, n, 0, 0, 0, true);
+    auto end2 = high_resolution_clock::now();
+    auto duration2 = duration_cast<microseconds>(end2 - start2);
+    
+    // Print comparison
+    cout << "\nResults:" << endl;
+    cout << left << setw(25) << "Metric" << setw(20) << "Standard" << "Bitwise" << endl;
+    cout << string(65, '-') << endl;
+    cout << setw(25) << "Execution time (μs)" << setw(20) << duration1.count() << duration2.count() << endl;
+    cout << setw(25) << "Solutions found" << setw(20) << standardSolutions << bitwiseSolutions << endl;
+    cout << setw(25) << "Recursion calls" << setw(20) << standardRecursions << "N/A" << endl;
+    cout << setw(25) << "Backtrack operations" << setw(20) << standardBacktracks << "N/A" << endl;
+    cout << setw(25) << "Space complexity" << setw(20) << "O(n²)" << "O(n)" << endl;
+    cout << setw(25) << "Time complexity" << setw(20) << "O(n!)" << "O(n!)" << endl;
+    
+    long long faster = min(duration1.count(), duration2.count());
+    string winner = (faster == duration1.count()) ? "Standard" : "Bitwise";
+    
+    cout << "\n========================================" << endl;
+    cout << "Winner: " << winner << " algorithm" << endl;
+    cout << "Speedup: " << fixed << setprecision(2) 
+         << (double)max(duration1.count(), duration2.count()) / faster << "x faster" << endl;
+    
+    // Verify against known solution count
+    int known = getKnownSolutionCount(n);
+    if (known != -1) {
+        cout << "Known solution count: " << known << endl;
+        cout << "Verification: " << (standardSolutions == known ? "✓ PASS" : "✗ FAIL") << endl;
+    }
+    
     cout << "========================================" << endl;
 }
 
@@ -257,7 +361,8 @@ int main() {
     cout << "3. Find all solutions with attack visualization" << endl;
     cout << "4. Step-by-step solution (first solution only)" << endl;
     cout << "5. Count solutions only (optimized bitwise)" << endl;
-    cout << "Enter choice (1-5): ";
+    cout << "6. Compare algorithms (Standard vs Bitwise)" << endl;
+    cout << "Enter choice (1-6): ";
     cin >> choice;
     
     cout << "\n========================================" << endl;
@@ -266,11 +371,24 @@ int main() {
     
     if (choice == 5) {
         // Optimized bitwise solution
+        auto start = high_resolution_clock::now();
         int count = solveNQueensBitwise(0, n, 0, 0, 0, true);
+        auto end = high_resolution_clock::now();
+        auto duration = duration_cast<microseconds>(end - start);
+        
         cout << "\nTotal solutions: " << count << endl;
+        cout << "Execution time: " << duration.count() << " μs" << endl;
         cout << "Algorithm: Optimized bitwise (no board storage)" << endl;
         cout << "Space Complexity: O(n) - recursion stack only" << endl;
         cout << "Time Complexity: O(n!) - but faster due to bitwise ops" << endl;
+        
+        int known = getKnownSolutionCount(n);
+        if (known != -1) {
+            cout << "\nKnown solution count: " << known << endl;
+            cout << "Verification: " << (count == known ? "✓ PASS" : "✗ FAIL") << endl;
+        }
+    } else if (choice == 6) {
+        compareAlgorithms(n);
     } else {
         bool findAll = (choice == 2 || choice == 3);
         bool showAttacks = (choice == 3);
@@ -283,9 +401,21 @@ int main() {
         backtrackCount = 0;
         recursionCalls = 0;
         stats = Stats();
+        uniqueSolutions.clear();
         
+        auto start = high_resolution_clock::now();
         if (solveNQueens(board, 0, n, findAll, showAttacks, stepByStep)) {
+            auto end = high_resolution_clock::now();
+            auto duration = duration_cast<microseconds>(end - start);
+            
             printStats(n);
+            cout << "\nExecution time: " << duration.count() << " μs" << endl;
+            
+            int known = getKnownSolutionCount(n);
+            if (known != -1 && findAll) {
+                cout << "Known solution count: " << known << endl;
+                cout << "Verification: " << (solutionCount == known ? "✓ PASS" : "✗ FAIL") << endl;
+            }
         } else {
             cout << "\nNo solution exists!" << endl;
         }
