@@ -4,6 +4,7 @@
 #include <chrono>
 #include <iomanip>
 #include <set>
+#include <algorithm>
 using namespace std;
 using namespace chrono;
 
@@ -23,6 +24,7 @@ Stats stats;
 
 // Store unique solutions
 set<vector<int>> uniqueSolutions;
+vector<vector<int>> allSolutions;
 
 // Check if placing queen at (row, col) is safe
 bool isSafe(vector<vector<int>>& board, int row, int col, int n) {
@@ -68,6 +70,58 @@ vector<int> boardToSolution(vector<vector<int>>& board, int n) {
         }
     }
     return solution;
+}
+
+// Rotate solution 90 degrees clockwise
+vector<int> rotateSolution(vector<int>& sol, int n) {
+    vector<int> rotated(n);
+    for (int i = 0; i < n; i++) {
+        rotated[sol[i]] = n - 1 - i;
+    }
+    return rotated;
+}
+
+// Reflect solution horizontally
+vector<int> reflectSolution(vector<int>& sol, int n) {
+    vector<int> reflected(n);
+    for (int i = 0; i < n; i++) {
+        reflected[i] = n - 1 - sol[i];
+    }
+    return reflected;
+}
+
+// Check if two solutions are symmetric
+bool areSymmetric(vector<int>& sol1, vector<int>& sol2, int n) {
+    vector<int> temp = sol1;
+    
+    // Check all 8 symmetries (4 rotations + 4 reflections)
+    for (int i = 0; i < 4; i++) {
+        if (temp == sol2) return true;
+        vector<int> reflected = reflectSolution(temp, n);
+        if (reflected == sol2) return true;
+        temp = rotateSolution(temp, n);
+    }
+    
+    return false;
+}
+
+// Count fundamental solutions (excluding symmetries)
+int countFundamentalSolutions(int n) {
+    int fundamental = 0;
+    vector<bool> counted(allSolutions.size(), false);
+    
+    for (int i = 0; i < allSolutions.size(); i++) {
+        if (counted[i]) continue;
+        
+        fundamental++;
+        for (int j = i + 1; j < allSolutions.size(); j++) {
+            if (areSymmetric(allSolutions[i], allSolutions[j], n)) {
+                counted[j] = true;
+            }
+        }
+    }
+    
+    return fundamental;
 }
 
 // Mark attacked positions
@@ -181,6 +235,7 @@ bool solveNQueens(vector<vector<int>>& board, int row, int n, bool findAll, bool
         solutionCount++;
         vector<int> sol = boardToSolution(board, n);
         uniqueSolutions.insert(sol);
+        allSolutions.push_back(sol);
         
         if (showAttacks) {
             printBoardWithAttacks(board, n);
@@ -251,6 +306,12 @@ void printStats(int n) {
     cout << "========================================" << endl;
     cout << "Total solutions: " << solutionCount << endl;
     cout << "Unique solutions: " << uniqueSolutions.size() << endl;
+    
+    if (allSolutions.size() > 0) {
+        int fundamental = countFundamentalSolutions(n);
+        cout << "Fundamental solutions: " << fundamental << " (excluding symmetries)" << endl;
+    }
+    
     cout << "Recursion calls: " << recursionCalls << endl;
     cout << "Backtrack operations: " << backtrackCount << endl;
     cout << "Safety checks: " << stats.totalChecks << endl;
@@ -277,6 +338,47 @@ int getKnownSolutionCount(int n) {
     return -1;  // Unknown
 }
 
+// Print complexity analysis
+void printComplexityAnalysis(int n) {
+    cout << "\n========================================" << endl;
+    cout << "       Complexity Analysis             " << endl;
+    cout << "========================================" << endl;
+    
+    cout << "\nTime Complexity:" << endl;
+    cout << "  • Worst case: O(n!)" << endl;
+    cout << "  • With pruning: Much better in practice" << endl;
+    cout << "  • Each row: try n positions" << endl;
+    cout << "  • Total states explored: ~n^n (with pruning)" << endl;
+    
+    cout << "\nSpace Complexity:" << endl;
+    cout << "  • Standard: O(n²) - board storage" << endl;
+    cout << "  • Bitwise: O(n) - recursion stack only" << endl;
+    cout << "  • Recursion depth: O(n)" << endl;
+    
+    cout << "\nSolution Growth:" << endl;
+    cout << "  n  | Solutions | Fundamental" << endl;
+    cout << "  ---|-----------|------------" << endl;
+    int fundamentalCounts[] = {0, 1, 0, 0, 1, 2, 1, 6, 12, 46, 92, 341, 1787, 9233, 45752};
+    for (int i = 1; i <= min(n + 3, 14); i++) {
+        int sols = getKnownSolutionCount(i);
+        if (sols != -1) {
+            cout << "  " << setw(2) << i << " | " << setw(9) << sols << " | " << setw(10) << fundamentalCounts[i] << endl;
+        }
+    }
+    
+    cout << "\nBacktracking Efficiency:" << endl;
+    cout << "  • Pruning eliminates invalid branches early" << endl;
+    cout << "  • Constraint propagation reduces search space" << endl;
+    cout << "  • Bitwise operations: 10-100x faster" << endl;
+    
+    cout << "\nPractical Applications:" << endl;
+    cout << "  • Constraint satisfaction problems" << endl;
+    cout << "  • Resource allocation" << endl;
+    cout << "  • Scheduling problems" << endl;
+    cout << "  • Graph coloring" << endl;
+    cout << "========================================" << endl;
+}
+
 // Compare algorithms
 void compareAlgorithms(int n) {
     cout << "\n========================================" << endl;
@@ -290,6 +392,7 @@ void compareAlgorithms(int n) {
     recursionCalls = 0;
     stats = Stats();
     uniqueSolutions.clear();
+    allSolutions.clear();
     
     auto start1 = high_resolution_clock::now();
     solveNQueens(board, 0, n, true, false, false);
@@ -332,6 +435,10 @@ void compareAlgorithms(int n) {
         cout << "Verification: " << (standardSolutions == known ? "✓ PASS" : "✗ FAIL") << endl;
     }
     
+    cout << "\nRecommendations:" << endl;
+    cout << "  • Standard: Better for visualization and debugging" << endl;
+    cout << "  • Bitwise: Best for counting solutions (10-100x faster)" << endl;
+    cout << "  • Both use backtracking with constraint propagation" << endl;
     cout << "========================================" << endl;
 }
 
@@ -340,6 +447,7 @@ int main() {
     
     cout << "========================================" << endl;
     cout << "         N-Queens Problem              " << endl;
+    cout << "     Complete DSA Implementation       " << endl;
     cout << "========================================" << endl;
     
     cout << "Enter board size (N): ";
@@ -362,7 +470,8 @@ int main() {
     cout << "4. Step-by-step solution (first solution only)" << endl;
     cout << "5. Count solutions only (optimized bitwise)" << endl;
     cout << "6. Compare algorithms (Standard vs Bitwise)" << endl;
-    cout << "Enter choice (1-6): ";
+    cout << "7. Complexity analysis" << endl;
+    cout << "Enter choice (1-7): ";
     cin >> choice;
     
     cout << "\n========================================" << endl;
@@ -389,6 +498,21 @@ int main() {
         }
     } else if (choice == 6) {
         compareAlgorithms(n);
+    } else if (choice == 7) {
+        printComplexityAnalysis(n);
+        
+        cout << "\nHistorical Context:" << endl;
+        cout << "  • First studied by Max Bezzel in 1848" << endl;
+        cout << "  • Classic constraint satisfaction problem" << endl;
+        cout << "  • Demonstrates backtracking algorithm" << endl;
+        cout << "  • Used in AI and optimization research" << endl;
+        
+        cout << "\nMathematical Properties:" << endl;
+        cout << "  • Solutions exist for all n ≥ 4" << endl;
+        cout << "  • No solutions for n = 2, 3" << endl;
+        cout << "  • Symmetry reduces unique solutions by ~8x" << endl;
+        cout << "  • Growth rate: exponential but irregular" << endl;
+        cout << "========================================" << endl;
     } else {
         bool findAll = (choice == 2 || choice == 3);
         bool showAttacks = (choice == 3);
@@ -402,6 +526,7 @@ int main() {
         recursionCalls = 0;
         stats = Stats();
         uniqueSolutions.clear();
+        allSolutions.clear();
         
         auto start = high_resolution_clock::now();
         if (solveNQueens(board, 0, n, findAll, showAttacks, stepByStep)) {
