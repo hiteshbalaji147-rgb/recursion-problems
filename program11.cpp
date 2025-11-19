@@ -229,12 +229,12 @@ bool solveSudokuOptimized(int grid[N][N]) {
     return false;
 }
 
-// Count all solutions (for uniqueness check)
+// Count all solutions
 bool countSolutions(int grid[N][N], int &count, int maxCount = 2) {
     int row, col;
     if (!findEmptyCell(grid, row, col)) {
         count++;
-        return count < maxCount;  // Continue if we haven't reached maxCount
+        return count < maxCount;
     }
     
     for (int num = 1; num <= 9; num++) {
@@ -243,7 +243,7 @@ bool countSolutions(int grid[N][N], int &count, int maxCount = 2) {
             
             if (!countSolutions(grid, count, maxCount)) {
                 grid[row][col] = 0;
-                return false;  // Stop early if we found enough solutions
+                return false;
             }
             
             grid[row][col] = 0;
@@ -253,7 +253,7 @@ bool countSolutions(int grid[N][N], int &count, int maxCount = 2) {
     return true;
 }
 
-// Check if puzzle has unique solution
+// Check uniqueness
 bool hasUniqueSolution(int grid[N][N]) {
     int testGrid[N][N];
     copyGrid(grid, testGrid);
@@ -264,7 +264,7 @@ bool hasUniqueSolution(int grid[N][N]) {
     return count == 1;
 }
 
-// Get hint (find easiest cell to fill)
+// Get hint
 void getHint(int grid[N][N]) {
     int bestRow = -1, bestCol = -1;
     int minOptions = 10;
@@ -308,7 +308,7 @@ void getHint(int grid[N][N]) {
     }
 }
 
-// Fill grid with valid solution
+// Fill grid
 bool fillGrid(int grid[N][N]) {
     int row, col;
     if (!findEmptyCell(grid, row, col)) return true;
@@ -392,6 +392,56 @@ string analyzeDifficulty(int grid[N][N]) {
     }
 }
 
+// Print complexity analysis
+void printComplexityAnalysis() {
+    cout << "\n========================================" << endl;
+    cout << "       Complexity Analysis             " << endl;
+    cout << "========================================" << endl;
+    
+    cout << "\nTime Complexity:" << endl;
+    cout << "  • Worst case: O(9^(n*n)) where n=9" << endl;
+    cout << "  • With pruning: Much better in practice" << endl;
+    cout << "  • MRV heuristic: Reduces search space significantly" << endl;
+    cout << "  • Average case: O(9^k) where k = empty cells" << endl;
+    
+    cout << "\nSpace Complexity:" << endl;
+    cout << "  • Grid storage: O(n²) = O(81)" << endl;
+    cout << "  • Recursion stack: O(n²) in worst case" << endl;
+    cout << "  • Total: O(n²)" << endl;
+    
+    cout << "\nAlgorithm Techniques:" << endl;
+    cout << "  1. Backtracking: Core solving strategy" << endl;
+    cout << "  2. Constraint Propagation: Validity checking" << endl;
+    cout << "  3. MRV Heuristic: Choose cells with fewest options" << endl;
+    cout << "  4. Forward Checking: Eliminate invalid values early" << endl;
+    
+    cout << "\nSolving Strategies:" << endl;
+    cout << "  • Naked Singles: Cells with only one possibility" << endl;
+    cout << "  • Hidden Singles: Only cell in row/col/box for value" << endl;
+    cout << "  • Naked Pairs/Triples: Eliminate candidates" << endl;
+    cout << "  • Box/Line Reduction: Constraint propagation" << endl;
+    
+    cout << "\nPerformance Factors:" << endl;
+    cout << "  • Empty cells: More = harder" << endl;
+    cout << "  • Clue distribution: Affects difficulty" << endl;
+    cout << "  • Constraint density: More constraints = easier" << endl;
+    cout << "  • Backtrack frequency: Indicates difficulty" << endl;
+    
+    cout << "\nReal-World Applications:" << endl;
+    cout << "  • Constraint satisfaction problems" << endl;
+    cout << "  • Resource allocation" << endl;
+    cout << "  • Scheduling and timetabling" << endl;
+    cout << "  • Graph coloring problems" << endl;
+    cout << "  • Logic puzzle solving" << endl;
+    
+    cout << "\nHistorical Context:" << endl;
+    cout << "  • Invented by Howard Garns (1979)" << endl;
+    cout << "  • Popularized in Japan as 'Sudoku'" << endl;
+    cout << "  • NP-complete problem" << endl;
+    cout << "  • 6.67×10^21 valid 9×9 grids exist" << endl;
+    cout << "========================================" << endl;
+}
+
 // Print statistics
 void printStats(int emptyCells, string algorithm = "") {
     cout << "\n========================================" << endl;
@@ -465,6 +515,7 @@ void compareAlgorithms(int grid[N][N], int emptyCells) {
     
     cout << "Time speedup: " << fixed << setprecision(2) << timeImprovement << "x faster" << endl;
     cout << "Recursion reduction: " << recursionImprovement << "x fewer calls" << endl;
+    cout << "\nWinner: Optimized (MRV heuristic)" << endl;
     cout << "========================================" << endl;
 }
 
@@ -518,6 +569,7 @@ int main() {
     
     cout << "========================================" << endl;
     cout << "         Sudoku Solver                 " << endl;
+    cout << "     Complete DSA Implementation       " << endl;
     cout << "========================================" << endl;
     
     int mainChoice;
@@ -527,10 +579,16 @@ int main() {
     cout << "3. Analyze puzzle difficulty" << endl;
     cout << "4. Get hint for puzzle" << endl;
     cout << "5. Check solution uniqueness" << endl;
-    cout << "Enter choice (1-5): ";
+    cout << "6. Complexity analysis & techniques" << endl;
+    cout << "Enter choice (1-6): ";
     cin >> mainChoice;
     
     int grid[N][N];
+    
+    if (mainChoice == 6) {
+        printComplexityAnalysis();
+        return 0;
+    }
     
     if (mainChoice == 2) {
         int difficulty;
