@@ -2,7 +2,10 @@
 #include <vector>
 #include <unistd.h>
 #include <bitset>
+#include <chrono>
+#include <iomanip>
 using namespace std;
+using namespace chrono;
 
 #define N 9
 
@@ -13,6 +16,7 @@ struct Stats {
     int validityChecks = 0;
     int numbersPlaced = 0;
     int numbersRemoved = 0;
+    long long executionTime = 0;  // in microseconds
 };
 
 Stats stats;
@@ -38,6 +42,15 @@ void printGrid(int grid[N][N], int highlightRow = -1, int highlightCol = -1) {
             }
         }
         cout << endl;
+    }
+}
+
+// Copy grid
+void copyGrid(int source[N][N], int dest[N][N]) {
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            dest[i][j] = source[i][j];
+        }
     }
 }
 
@@ -260,9 +273,11 @@ bool solveSudokuOptimized(int grid[N][N]) {
 }
 
 // Print statistics
-void printStats(int emptyCells) {
+void printStats(int emptyCells, string algorithm = "") {
     cout << "\n========================================" << endl;
-    cout << "           Statistics                  " << endl;
+    cout << "           Statistics";
+    if (!algorithm.empty()) cout << " (" << algorithm << ")";
+    cout << endl;
     cout << "========================================" << endl;
     cout << "Empty cells to fill: " << emptyCells << endl;
     cout << "Recursion calls: " << stats.recursionCalls << endl;
@@ -272,12 +287,75 @@ void printStats(int emptyCells) {
     cout << "Numbers removed: " << stats.numbersRemoved << endl;
     
     if (emptyCells > 0) {
-        cout << "Avg attempts per cell: " << (double)stats.numbersPlaced / emptyCells << endl;
+        cout << "Avg attempts per cell: " << fixed << setprecision(2) 
+             << (double)stats.numbersPlaced / emptyCells << endl;
     }
     
     double efficiency = (stats.validityChecks > 0) ? 
                        (double)stats.numbersPlaced / stats.validityChecks * 100 : 0;
     cout << "Efficiency: " << efficiency << "%" << endl;
+    
+    if (stats.executionTime > 0) {
+        cout << "Execution time: " << stats.executionTime << " μs" << endl;
+    }
+    cout << "========================================" << endl;
+}
+
+// Compare algorithms
+void compareAlgorithms(int grid[N][N], int emptyCells) {
+    cout << "\n========================================" << endl;
+    cout << "    Algorithm Performance Comparison   " << endl;
+    cout << "========================================" << endl;
+    
+    int grid1[N][N], grid2[N][N];
+    copyGrid(grid, grid1);
+    copyGrid(grid, grid2);
+    
+    // Test basic algorithm
+    stats = Stats();
+    auto start1 = high_resolution_clock::now();
+    bool solved1 = solveSudoku(grid1);
+    auto end1 = high_resolution_clock::now();
+    auto duration1 = duration_cast<microseconds>(end1 - start1);
+    
+    Stats basicStats = stats;
+    basicStats.executionTime = duration1.count();
+    
+    // Test optimized algorithm
+    stats = Stats();
+    auto start2 = high_resolution_clock::now();
+    bool solved2 = solveSudokuOptimized(grid2);
+    auto end2 = high_resolution_clock::now();
+    auto duration2 = duration_cast<microseconds>(end2 - start2);
+    
+    Stats optimizedStats = stats;
+    optimizedStats.executionTime = duration2.count();
+    
+    // Print comparison table
+    cout << "\nResults:" << endl;
+    cout << left << setw(25) << "Metric" << setw(20) << "Basic" << "Optimized" << endl;
+    cout << string(65, '-') << endl;
+    cout << setw(25) << "Execution time (μs)" << setw(20) << basicStats.executionTime << optimizedStats.executionTime << endl;
+    cout << setw(25) << "Recursion calls" << setw(20) << basicStats.recursionCalls << optimizedStats.recursionCalls << endl;
+    cout << setw(25) << "Backtrack operations" << setw(20) << basicStats.backtrackCount << optimizedStats.backtrackCount << endl;
+    cout << setw(25) << "Validity checks" << setw(20) << basicStats.validityChecks << optimizedStats.validityChecks << endl;
+    cout << setw(25) << "Numbers placed" << setw(20) << basicStats.numbersPlaced << optimizedStats.numbersPlaced << endl;
+    
+    // Calculate improvements
+    cout << "\n========================================" << endl;
+    cout << "Performance Improvements:" << endl;
+    cout << "========================================" << endl;
+    
+    double timeImprovement = (double)basicStats.executionTime / optimizedStats.executionTime;
+    double recursionImprovement = (double)basicStats.recursionCalls / optimizedStats.recursionCalls;
+    double backtrackImprovement = (double)basicStats.backtrackCount / optimizedStats.backtrackCount;
+    
+    cout << "Time speedup: " << fixed << setprecision(2) << timeImprovement << "x faster" << endl;
+    cout << "Recursion reduction: " << recursionImprovement << "x fewer calls" << endl;
+    cout << "Backtrack reduction: " << backtrackImprovement << "x fewer backtracks" << endl;
+    
+    cout << "\nWinner: Optimized (MRV heuristic)" << endl;
+    cout << "Reason: Chooses cells with fewest options first" << endl;
     cout << "========================================" << endl;
 }
 
@@ -351,16 +429,19 @@ int main() {
     cout << "\nSelect algorithm:" << endl;
     cout << "1. Basic backtracking" << endl;
     cout << "2. Optimized (MRV heuristic)" << endl;
-    cout << "Enter choice (1-2): ";
+    cout << "3. Compare both algorithms" << endl;
+    cout << "Enter choice (1-3): ";
     cin >> algoChoice;
     
-    cout << "\nSelect mode:" << endl;
-    cout << "1. Solve instantly" << endl;
-    cout << "2. Step-by-step visualization" << endl;
-    cout << "Enter choice (1-2): ";
-    cin >> modeChoice;
-    
-    stepByStep = (modeChoice == 2);
+    if (algoChoice != 3) {
+        cout << "\nSelect mode:" << endl;
+        cout << "1. Solve instantly" << endl;
+        cout << "2. Step-by-step visualization" << endl;
+        cout << "Enter choice (1-2): ";
+        cin >> modeChoice;
+        
+        stepByStep = (modeChoice == 2);
+    }
     
     int grid[N][N];
     getPuzzle(grid, puzzleChoice - 1);
@@ -379,26 +460,35 @@ int main() {
     int emptyCells = countEmptyCells(grid);
     cout << "Empty cells: " << emptyCells << endl;
     
-    cout << "\n========================================" << endl;
-    cout << "Solving with " << (algoChoice == 1 ? "Basic" : "Optimized") << " algorithm..." << endl;
-    cout << "========================================" << endl;
-    
-    stats = Stats();  // Reset statistics
-    
-    bool solved;
-    if (algoChoice == 1) {
-        solved = solveSudoku(grid);
+    if (algoChoice == 3) {
+        compareAlgorithms(grid, emptyCells);
     } else {
-        solved = solveSudokuOptimized(grid);
-    }
-    
-    if (solved) {
-        cout << "\nSolution Found:" << endl;
-        printGrid(grid);
-        printStats(emptyCells);
-    } else {
-        cout << "\nNo solution exists!" << endl;
-        printStats(emptyCells);
+        cout << "\n========================================" << endl;
+        cout << "Solving with " << (algoChoice == 1 ? "Basic" : "Optimized") << " algorithm..." << endl;
+        cout << "========================================" << endl;
+        
+        stats = Stats();  // Reset statistics
+        
+        auto start = high_resolution_clock::now();
+        bool solved;
+        if (algoChoice == 1) {
+            solved = solveSudoku(grid);
+        } else {
+            solved = solveSudokuOptimized(grid);
+        }
+        auto end = high_resolution_clock::now();
+        auto duration = duration_cast<microseconds>(end - start);
+        
+        stats.executionTime = duration.count();
+        
+        if (solved) {
+            cout << "\nSolution Found:" << endl;
+            printGrid(grid);
+            printStats(emptyCells, algoChoice == 1 ? "Basic" : "Optimized");
+        } else {
+            cout << "\nNo solution exists!" << endl;
+            printStats(emptyCells, algoChoice == 1 ? "Basic" : "Optimized");
+        }
     }
     
     return 0;
