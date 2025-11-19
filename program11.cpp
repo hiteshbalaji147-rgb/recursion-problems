@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <unistd.h>
 using namespace std;
 
 #define N 9
@@ -14,9 +15,10 @@ struct Stats {
 };
 
 Stats stats;
+bool stepByStep = false;
 
 // Print the Sudoku grid
-void printGrid(int grid[N][N]) {
+void printGrid(int grid[N][N], int highlightRow = -1, int highlightCol = -1) {
     for (int row = 0; row < N; row++) {
         if (row % 3 == 0 && row != 0) {
             cout << "------+-------+------" << endl;
@@ -25,7 +27,10 @@ void printGrid(int grid[N][N]) {
             if (col % 3 == 0 && col != 0) {
                 cout << "| ";
             }
-            if (grid[row][col] == 0) {
+            
+            if (row == highlightRow && col == highlightCol) {
+                cout << "[" << grid[row][col] << "]";
+            } else if (grid[row][col] == 0) {
                 cout << ". ";
             } else {
                 cout << grid[row][col] << " ";
@@ -137,12 +142,21 @@ bool solveSudoku(int grid[N][N]) {
             grid[row][col] = num;
             stats.numbersPlaced++;
             
+            if (stepByStep) {
+                cout << "\nPlacing " << num << " at (" << row << ", " << col << "):" << endl;
+                printGrid(grid, row, col);
+                usleep(100000);  // 0.1 second delay
+            }
+            
             // Recursively solve
             if (solveSudoku(grid)) {
                 return true;
             }
             
             // Backtrack
+            if (stepByStep) {
+                cout << "\nBacktracking from (" << row << ", " << col << "):" << endl;
+            }
             grid[row][col] = 0;
             stats.numbersRemoved++;
             stats.backtrackCount++;
@@ -167,7 +181,59 @@ void printStats(int emptyCells) {
     if (emptyCells > 0) {
         cout << "Avg attempts per cell: " << (double)stats.numbersPlaced / emptyCells << endl;
     }
+    
+    double efficiency = (stats.validityChecks > 0) ? 
+                       (double)stats.numbersPlaced / stats.validityChecks * 100 : 0;
+    cout << "Efficiency: " << efficiency << "%" << endl;
     cout << "========================================" << endl;
+}
+
+// Predefined puzzles
+void getPuzzle(int grid[N][N], int choice) {
+    int puzzles[3][N][N] = {
+        // Easy puzzle
+        {
+            {5, 3, 0, 0, 7, 0, 0, 0, 0},
+            {6, 0, 0, 1, 9, 5, 0, 0, 0},
+            {0, 9, 8, 0, 0, 0, 0, 6, 0},
+            {8, 0, 0, 0, 6, 0, 0, 0, 3},
+            {4, 0, 0, 8, 0, 3, 0, 0, 1},
+            {7, 0, 0, 0, 2, 0, 0, 0, 6},
+            {0, 6, 0, 0, 0, 0, 2, 8, 0},
+            {0, 0, 0, 4, 1, 9, 0, 0, 5},
+            {0, 0, 0, 0, 8, 0, 0, 7, 9}
+        },
+        // Medium puzzle
+        {
+            {0, 0, 0, 6, 0, 0, 4, 0, 0},
+            {7, 0, 0, 0, 0, 3, 6, 0, 0},
+            {0, 0, 0, 0, 9, 1, 0, 8, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 5, 0, 1, 8, 0, 0, 0, 3},
+            {0, 0, 0, 3, 0, 6, 0, 4, 5},
+            {0, 4, 0, 2, 0, 0, 0, 6, 0},
+            {9, 0, 3, 0, 0, 0, 0, 0, 0},
+            {0, 2, 0, 0, 0, 0, 1, 0, 0}
+        },
+        // Hard puzzle
+        {
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 3, 0, 8, 5},
+            {0, 0, 1, 0, 2, 0, 0, 0, 0},
+            {0, 0, 0, 5, 0, 7, 0, 0, 0},
+            {0, 0, 4, 0, 0, 0, 1, 0, 0},
+            {0, 9, 0, 0, 0, 0, 0, 0, 0},
+            {5, 0, 0, 0, 0, 0, 0, 7, 3},
+            {0, 0, 2, 0, 1, 0, 0, 0, 0},
+            {0, 0, 0, 0, 4, 0, 0, 0, 9}
+        }
+    };
+    
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            grid[i][j] = puzzles[choice][i][j];
+        }
+    }
 }
 
 int main() {
@@ -175,18 +241,30 @@ int main() {
     cout << "         Sudoku Solver                 " << endl;
     cout << "========================================" << endl;
     
-    // Example puzzle (0 represents empty cell)
-    int grid[N][N] = {
-        {5, 3, 0, 0, 7, 0, 0, 0, 0},
-        {6, 0, 0, 1, 9, 5, 0, 0, 0},
-        {0, 9, 8, 0, 0, 0, 0, 6, 0},
-        {8, 0, 0, 0, 6, 0, 0, 0, 3},
-        {4, 0, 0, 8, 0, 3, 0, 0, 1},
-        {7, 0, 0, 0, 2, 0, 0, 0, 6},
-        {0, 6, 0, 0, 0, 0, 2, 8, 0},
-        {0, 0, 0, 4, 1, 9, 0, 0, 5},
-        {0, 0, 0, 0, 8, 0, 0, 7, 9}
-    };
+    int puzzleChoice, modeChoice;
+    
+    cout << "\nSelect puzzle difficulty:" << endl;
+    cout << "1. Easy (51 empty cells)" << endl;
+    cout << "2. Medium (56 empty cells)" << endl;
+    cout << "3. Hard (60 empty cells)" << endl;
+    cout << "Enter choice (1-3): ";
+    cin >> puzzleChoice;
+    
+    if (puzzleChoice < 1 || puzzleChoice > 3) {
+        cout << "Invalid choice!" << endl;
+        return 1;
+    }
+    
+    cout << "\nSelect mode:" << endl;
+    cout << "1. Solve instantly" << endl;
+    cout << "2. Step-by-step visualization" << endl;
+    cout << "Enter choice (1-2): ";
+    cin >> modeChoice;
+    
+    stepByStep = (modeChoice == 2);
+    
+    int grid[N][N];
+    getPuzzle(grid, puzzleChoice - 1);
     
     cout << "\nOriginal Puzzle:" << endl;
     printGrid(grid);
