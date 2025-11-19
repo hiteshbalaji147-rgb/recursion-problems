@@ -18,11 +18,12 @@ struct Stats {
     int validityChecks = 0;
     int numbersPlaced = 0;
     int numbersRemoved = 0;
-    long long executionTime = 0;  // in microseconds
+    long long executionTime = 0;
 };
 
 Stats stats;
 bool stepByStep = false;
+int solutionCount = 0;
 
 // Print the Sudoku grid
 void printGrid(int grid[N][N], int highlightRow = -1, int highlightCol = -1) {
@@ -60,47 +61,36 @@ void copyGrid(int source[N][N], int dest[N][N]) {
 bool isValid(int grid[N][N], int row, int col, int num) {
     stats.validityChecks++;
     
-    // Check row
     for (int x = 0; x < N; x++) {
-        if (grid[row][x] == num) {
-            return false;
-        }
+        if (grid[row][x] == num) return false;
     }
     
-    // Check column
     for (int x = 0; x < N; x++) {
-        if (grid[x][col] == num) {
-            return false;
-        }
+        if (grid[x][col] == num) return false;
     }
     
-    // Check 3x3 box
     int startRow = row - row % 3;
     int startCol = col - col % 3;
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
-            if (grid[i + startRow][j + startCol] == num) {
-                return false;
-            }
+            if (grid[i + startRow][j + startCol] == num) return false;
         }
     }
     
     return true;
 }
 
-// Find empty cell (returns true if found)
+// Find empty cell
 bool findEmptyCell(int grid[N][N], int &row, int &col) {
     for (row = 0; row < N; row++) {
         for (col = 0; col < N; col++) {
-            if (grid[row][col] == 0) {
-                return true;
-            }
+            if (grid[row][col] == 0) return true;
         }
     }
     return false;
 }
 
-// Find empty cell with minimum remaining values (MRV heuristic)
+// Find empty cell with MRV heuristic
 bool findEmptyCellMRV(int grid[N][N], int &row, int &col) {
     int minOptions = 10;
     bool found = false;
@@ -108,12 +98,9 @@ bool findEmptyCellMRV(int grid[N][N], int &row, int &col) {
     for (int r = 0; r < N; r++) {
         for (int c = 0; c < N; c++) {
             if (grid[r][c] == 0) {
-                // Count possible values
                 int options = 0;
                 for (int num = 1; num <= 9; num++) {
-                    if (isValid(grid, r, c, num)) {
-                        options++;
-                    }
+                    if (isValid(grid, r, c, num)) options++;
                 }
                 
                 if (options < minOptions) {
@@ -140,19 +127,14 @@ vector<int> getPossibleValues(int grid[N][N], int row, int col) {
     return possible;
 }
 
-// Validate initial puzzle
+// Validate puzzle
 bool validatePuzzle(int grid[N][N]) {
     for (int row = 0; row < N; row++) {
         for (int col = 0; col < N; col++) {
             if (grid[row][col] != 0) {
                 int num = grid[row][col];
+                if (num < 1 || num > 9) return false;
                 
-                // Check if number is in valid range
-                if (num < 1 || num > 9) {
-                    return false;
-                }
-                
-                // Temporarily remove number to check validity
                 grid[row][col] = 0;
                 if (!isValid(grid, row, col, num)) {
                     grid[row][col] = num;
@@ -170,9 +152,7 @@ int countEmptyCells(int grid[N][N]) {
     int count = 0;
     for (int row = 0; row < N; row++) {
         for (int col = 0; col < N; col++) {
-            if (grid[row][col] == 0) {
-                count++;
-            }
+            if (grid[row][col] == 0) count++;
         }
     }
     return count;
@@ -183,10 +163,7 @@ bool solveSudoku(int grid[N][N]) {
     stats.recursionCalls++;
     
     int row, col;
-    
-    if (!findEmptyCell(grid, row, col)) {
-        return true;
-    }
+    if (!findEmptyCell(grid, row, col)) return true;
     
     for (int num = 1; num <= 9; num++) {
         if (isValid(grid, row, col, num)) {
@@ -199,9 +176,7 @@ bool solveSudoku(int grid[N][N]) {
                 usleep(100000);
             }
             
-            if (solveSudoku(grid)) {
-                return true;
-            }
+            if (solveSudoku(grid)) return true;
             
             if (stepByStep) {
                 cout << "\nBacktracking from (" << row << ", " << col << "):" << endl;
@@ -215,18 +190,14 @@ bool solveSudoku(int grid[N][N]) {
     return false;
 }
 
-// Optimized solver with MRV heuristic
+// Optimized solver
 bool solveSudokuOptimized(int grid[N][N]) {
     stats.recursionCalls++;
     
     int row, col;
-    
-    if (!findEmptyCellMRV(grid, row, col)) {
-        return true;
-    }
+    if (!findEmptyCellMRV(grid, row, col)) return true;
     
     vector<int> possible = getPossibleValues(grid, row, col);
-    
     if (possible.empty()) {
         stats.backtrackCount++;
         return false;
@@ -245,9 +216,7 @@ bool solveSudokuOptimized(int grid[N][N]) {
             usleep(100000);
         }
         
-        if (solveSudokuOptimized(grid)) {
-            return true;
-        }
+        if (solveSudokuOptimized(grid)) return true;
         
         if (stepByStep) {
             cout << "\nBacktracking from (" << row << ", " << col << "):" << endl;
@@ -260,26 +229,97 @@ bool solveSudokuOptimized(int grid[N][N]) {
     return false;
 }
 
-// Fill grid with valid solution (for puzzle generation)
-bool fillGrid(int grid[N][N]) {
+// Count all solutions (for uniqueness check)
+bool countSolutions(int grid[N][N], int &count, int maxCount = 2) {
     int row, col;
-    
     if (!findEmptyCell(grid, row, col)) {
-        return true;
+        count++;
+        return count < maxCount;  // Continue if we haven't reached maxCount
     }
     
-    // Try numbers in random order
+    for (int num = 1; num <= 9; num++) {
+        if (isValid(grid, row, col, num)) {
+            grid[row][col] = num;
+            
+            if (!countSolutions(grid, count, maxCount)) {
+                grid[row][col] = 0;
+                return false;  // Stop early if we found enough solutions
+            }
+            
+            grid[row][col] = 0;
+        }
+    }
+    
+    return true;
+}
+
+// Check if puzzle has unique solution
+bool hasUniqueSolution(int grid[N][N]) {
+    int testGrid[N][N];
+    copyGrid(grid, testGrid);
+    
+    int count = 0;
+    countSolutions(testGrid, count, 2);
+    
+    return count == 1;
+}
+
+// Get hint (find easiest cell to fill)
+void getHint(int grid[N][N]) {
+    int bestRow = -1, bestCol = -1;
+    int minOptions = 10;
+    vector<int> bestPossible;
+    
+    for (int r = 0; r < N; r++) {
+        for (int c = 0; c < N; c++) {
+            if (grid[r][c] == 0) {
+                vector<int> possible = getPossibleValues(grid, r, c);
+                
+                if (possible.size() > 0 && possible.size() < minOptions) {
+                    minOptions = possible.size();
+                    bestRow = r;
+                    bestCol = c;
+                    bestPossible = possible;
+                }
+            }
+        }
+    }
+    
+    if (bestRow != -1) {
+        cout << "\n========================================" << endl;
+        cout << "              Hint                     " << endl;
+        cout << "========================================" << endl;
+        cout << "Easiest cell: (" << bestRow << ", " << bestCol << ")" << endl;
+        cout << "Possible values: ";
+        for (int val : bestPossible) {
+            cout << val << " ";
+        }
+        cout << endl;
+        
+        if (bestPossible.size() == 1) {
+            cout << "This cell has only ONE possible value!" << endl;
+            cout << "You should place: " << bestPossible[0] << endl;
+        } else {
+            cout << "This cell has " << bestPossible.size() << " possible values." << endl;
+        }
+        cout << "========================================" << endl;
+    } else {
+        cout << "\nNo empty cells found!" << endl;
+    }
+}
+
+// Fill grid with valid solution
+bool fillGrid(int grid[N][N]) {
+    int row, col;
+    if (!findEmptyCell(grid, row, col)) return true;
+    
     vector<int> numbers = {1, 2, 3, 4, 5, 6, 7, 8, 9};
     random_shuffle(numbers.begin(), numbers.end());
     
     for (int num : numbers) {
         if (isValid(grid, row, col, num)) {
             grid[row][col] = num;
-            
-            if (fillGrid(grid)) {
-                return true;
-            }
-            
+            if (fillGrid(grid)) return true;
             grid[row][col] = 0;
         }
     }
@@ -287,9 +327,8 @@ bool fillGrid(int grid[N][N]) {
     return false;
 }
 
-// Generate puzzle by removing numbers
+// Generate puzzle
 void generatePuzzle(int grid[N][N], int difficulty) {
-    // First fill grid with valid solution
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
             grid[i][j] = 0;
@@ -298,11 +337,10 @@ void generatePuzzle(int grid[N][N], int difficulty) {
     
     fillGrid(grid);
     
-    // Remove numbers based on difficulty
     int cellsToRemove;
-    if (difficulty == 1) cellsToRemove = 40;      // Easy
-    else if (difficulty == 2) cellsToRemove = 50; // Medium
-    else cellsToRemove = 55;                       // Hard
+    if (difficulty == 1) cellsToRemove = 40;
+    else if (difficulty == 2) cellsToRemove = 50;
+    else cellsToRemove = 55;
     
     int removed = 0;
     while (removed < cellsToRemove) {
@@ -313,16 +351,7 @@ void generatePuzzle(int grid[N][N], int difficulty) {
             int backup = grid[row][col];
             grid[row][col] = 0;
             
-            // Check if puzzle still has unique solution
-            int testGrid[N][N];
-            copyGrid(grid, testGrid);
-            
-            Stats tempStats = stats;
-            stats = Stats();
-            bool solvable = solveSudokuOptimized(testGrid);
-            stats = tempStats;
-            
-            if (solvable) {
+            if (hasUniqueSolution(grid)) {
                 removed++;
             } else {
                 grid[row][col] = backup;
@@ -331,7 +360,7 @@ void generatePuzzle(int grid[N][N], int difficulty) {
     }
 }
 
-// Analyze puzzle difficulty
+// Analyze difficulty
 string analyzeDifficulty(int grid[N][N]) {
     int emptyCells = countEmptyCells(grid);
     
@@ -404,7 +433,7 @@ void compareAlgorithms(int grid[N][N], int emptyCells) {
     
     stats = Stats();
     auto start1 = high_resolution_clock::now();
-    bool solved1 = solveSudoku(grid1);
+    solveSudoku(grid1);
     auto end1 = high_resolution_clock::now();
     auto duration1 = duration_cast<microseconds>(end1 - start1);
     
@@ -413,7 +442,7 @@ void compareAlgorithms(int grid[N][N], int emptyCells) {
     
     stats = Stats();
     auto start2 = high_resolution_clock::now();
-    bool solved2 = solveSudokuOptimized(grid2);
+    solveSudokuOptimized(grid2);
     auto end2 = high_resolution_clock::now();
     auto duration2 = duration_cast<microseconds>(end2 - start2);
     
@@ -426,8 +455,6 @@ void compareAlgorithms(int grid[N][N], int emptyCells) {
     cout << setw(25) << "Execution time (μs)" << setw(20) << basicStats.executionTime << optimizedStats.executionTime << endl;
     cout << setw(25) << "Recursion calls" << setw(20) << basicStats.recursionCalls << optimizedStats.recursionCalls << endl;
     cout << setw(25) << "Backtrack operations" << setw(20) << basicStats.backtrackCount << optimizedStats.backtrackCount << endl;
-    cout << setw(25) << "Validity checks" << setw(20) << basicStats.validityChecks << optimizedStats.validityChecks << endl;
-    cout << setw(25) << "Numbers placed" << setw(20) << basicStats.numbersPlaced << optimizedStats.numbersPlaced << endl;
     
     cout << "\n========================================" << endl;
     cout << "Performance Improvements:" << endl;
@@ -435,14 +462,9 @@ void compareAlgorithms(int grid[N][N], int emptyCells) {
     
     double timeImprovement = (double)basicStats.executionTime / optimizedStats.executionTime;
     double recursionImprovement = (double)basicStats.recursionCalls / optimizedStats.recursionCalls;
-    double backtrackImprovement = (double)basicStats.backtrackCount / optimizedStats.backtrackCount;
     
     cout << "Time speedup: " << fixed << setprecision(2) << timeImprovement << "x faster" << endl;
     cout << "Recursion reduction: " << recursionImprovement << "x fewer calls" << endl;
-    cout << "Backtrack reduction: " << backtrackImprovement << "x fewer backtracks" << endl;
-    
-    cout << "\nWinner: Optimized (MRV heuristic)" << endl;
-    cout << "Reason: Chooses cells with fewest options first" << endl;
     cout << "========================================" << endl;
 }
 
@@ -503,7 +525,9 @@ int main() {
     cout << "1. Solve predefined puzzle" << endl;
     cout << "2. Generate random puzzle" << endl;
     cout << "3. Analyze puzzle difficulty" << endl;
-    cout << "Enter choice (1-3): ";
+    cout << "4. Get hint for puzzle" << endl;
+    cout << "5. Check solution uniqueness" << endl;
+    cout << "Enter choice (1-5): ";
     cin >> mainChoice;
     
     int grid[N][N];
@@ -517,7 +541,7 @@ int main() {
         cout << "Enter choice (1-3): ";
         cin >> difficulty;
         
-        cout << "\nGenerating puzzle..." << endl;
+        cout << "\nGenerating puzzle with unique solution..." << endl;
         generatePuzzle(grid, difficulty);
         
         cout << "\nGenerated Puzzle:" << endl;
@@ -526,11 +550,17 @@ int main() {
         string analyzedDiff = analyzeDifficulty(grid);
         cout << "  Analyzed difficulty: " << analyzedDiff << endl;
         
+        cout << "\nVerifying uniqueness..." << endl;
+        if (hasUniqueSolution(grid)) {
+            cout << "✓ Puzzle has a unique solution!" << endl;
+        } else {
+            cout << "✗ Puzzle has multiple solutions!" << endl;
+        }
+        
         return 0;
     }
     
-    int puzzleChoice, modeChoice, algoChoice;
-    
+    int puzzleChoice;
     cout << "\nSelect puzzle difficulty:" << endl;
     cout << "1. Easy (51 empty cells)" << endl;
     cout << "2. Medium (56 empty cells)" << endl;
@@ -545,14 +575,31 @@ int main() {
     
     getPuzzle(grid, puzzleChoice - 1);
     
+    cout << "\nOriginal Puzzle:" << endl;
+    printGrid(grid);
+    
     if (mainChoice == 3) {
-        cout << "\nOriginal Puzzle:" << endl;
-        printGrid(grid);
-        
         string difficulty = analyzeDifficulty(grid);
         cout << "  Overall difficulty: " << difficulty << endl;
         return 0;
     }
+    
+    if (mainChoice == 4) {
+        getHint(grid);
+        return 0;
+    }
+    
+    if (mainChoice == 5) {
+        cout << "\nChecking solution uniqueness..." << endl;
+        if (hasUniqueSolution(grid)) {
+            cout << "✓ Puzzle has a unique solution!" << endl;
+        } else {
+            cout << "✗ Puzzle has multiple solutions!" << endl;
+        }
+        return 0;
+    }
+    
+    int algoChoice, modeChoice;
     
     cout << "\nSelect algorithm:" << endl;
     cout << "1. Basic backtracking" << endl;
@@ -570,9 +617,6 @@ int main() {
         
         stepByStep = (modeChoice == 2);
     }
-    
-    cout << "\nOriginal Puzzle:" << endl;
-    printGrid(grid);
     
     cout << "\nValidating puzzle..." << endl;
     if (!validatePuzzle(grid)) {
