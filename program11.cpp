@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <unistd.h>
+#include <bitset>
 using namespace std;
 
 #define N 9
@@ -84,6 +85,46 @@ bool findEmptyCell(int grid[N][N], int &row, int &col) {
     return false;
 }
 
+// Find empty cell with minimum remaining values (MRV heuristic)
+bool findEmptyCellMRV(int grid[N][N], int &row, int &col) {
+    int minOptions = 10;
+    bool found = false;
+    
+    for (int r = 0; r < N; r++) {
+        for (int c = 0; c < N; c++) {
+            if (grid[r][c] == 0) {
+                // Count possible values
+                int options = 0;
+                for (int num = 1; num <= 9; num++) {
+                    if (isValid(grid, r, c, num)) {
+                        options++;
+                    }
+                }
+                
+                if (options < minOptions) {
+                    minOptions = options;
+                    row = r;
+                    col = c;
+                    found = true;
+                }
+            }
+        }
+    }
+    
+    return found;
+}
+
+// Get possible values for a cell
+vector<int> getPossibleValues(int grid[N][N], int row, int col) {
+    vector<int> possible;
+    for (int num = 1; num <= 9; num++) {
+        if (isValid(grid, row, col, num)) {
+            possible.push_back(num);
+        }
+    }
+    return possible;
+}
+
 // Validate initial puzzle
 bool validatePuzzle(int grid[N][N]) {
     for (int row = 0; row < N; row++) {
@@ -124,7 +165,7 @@ int countEmptyCells(int grid[N][N]) {
     return count;
 }
 
-// Solve Sudoku using backtracking
+// Basic solver
 bool solveSudoku(int grid[N][N]) {
     stats.recursionCalls++;
     
@@ -164,6 +205,58 @@ bool solveSudoku(int grid[N][N]) {
     }
     
     return false;  // Trigger backtracking
+}
+
+// Optimized solver with MRV heuristic
+bool solveSudokuOptimized(int grid[N][N]) {
+    stats.recursionCalls++;
+    
+    int row, col;
+    
+    // If no empty cell, puzzle is solved
+    if (!findEmptyCellMRV(grid, row, col)) {
+        return true;
+    }
+    
+    // Get possible values for this cell
+    vector<int> possible = getPossibleValues(grid, row, col);
+    
+    // If no possible values, backtrack
+    if (possible.empty()) {
+        stats.backtrackCount++;
+        return false;
+    }
+    
+    // Try each possible value
+    for (int num : possible) {
+        // Place number
+        grid[row][col] = num;
+        stats.numbersPlaced++;
+        
+        if (stepByStep) {
+            cout << "\nPlacing " << num << " at (" << row << ", " << col << "):" << endl;
+            cout << "Possible values were: ";
+            for (int p : possible) cout << p << " ";
+            cout << endl;
+            printGrid(grid, row, col);
+            usleep(100000);
+        }
+        
+        // Recursively solve
+        if (solveSudokuOptimized(grid)) {
+            return true;
+        }
+        
+        // Backtrack
+        if (stepByStep) {
+            cout << "\nBacktracking from (" << row << ", " << col << "):" << endl;
+        }
+        grid[row][col] = 0;
+        stats.numbersRemoved++;
+        stats.backtrackCount++;
+    }
+    
+    return false;
 }
 
 // Print statistics
@@ -241,7 +334,7 @@ int main() {
     cout << "         Sudoku Solver                 " << endl;
     cout << "========================================" << endl;
     
-    int puzzleChoice, modeChoice;
+    int puzzleChoice, modeChoice, algoChoice;
     
     cout << "\nSelect puzzle difficulty:" << endl;
     cout << "1. Easy (51 empty cells)" << endl;
@@ -254,6 +347,12 @@ int main() {
         cout << "Invalid choice!" << endl;
         return 1;
     }
+    
+    cout << "\nSelect algorithm:" << endl;
+    cout << "1. Basic backtracking" << endl;
+    cout << "2. Optimized (MRV heuristic)" << endl;
+    cout << "Enter choice (1-2): ";
+    cin >> algoChoice;
     
     cout << "\nSelect mode:" << endl;
     cout << "1. Solve instantly" << endl;
@@ -281,12 +380,19 @@ int main() {
     cout << "Empty cells: " << emptyCells << endl;
     
     cout << "\n========================================" << endl;
-    cout << "Solving..." << endl;
+    cout << "Solving with " << (algoChoice == 1 ? "Basic" : "Optimized") << " algorithm..." << endl;
     cout << "========================================" << endl;
     
     stats = Stats();  // Reset statistics
     
-    if (solveSudoku(grid)) {
+    bool solved;
+    if (algoChoice == 1) {
+        solved = solveSudoku(grid);
+    } else {
+        solved = solveSudokuOptimized(grid);
+    }
+    
+    if (solved) {
         cout << "\nSolution Found:" << endl;
         printGrid(grid);
         printStats(emptyCells);
