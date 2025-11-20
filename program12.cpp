@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <chrono>
 #include <set>
+#include <unistd.h>
 using namespace std;
 using namespace chrono;
 
@@ -19,6 +20,7 @@ struct Stats {
 };
 
 Stats stats;
+bool stepByStep = false;
 
 // Graph structure
 struct Graph {
@@ -119,6 +121,23 @@ Graph createPetersenGraph() {
     return g;
 }
 
+Graph createWheelGraph(int n) {
+    Graph g(n + 1, "Wheel Graph W" + to_string(n));
+    for (int i = 1; i <= n; i++) {
+        g.addEdge(i, (i % n) + 1);
+        g.addEdge(0, i);
+    }
+    return g;
+}
+
+Graph createStarGraph(int n) {
+    Graph g(n + 1, "Star Graph S" + to_string(n));
+    for (int i = 1; i <= n; i++) {
+        g.addEdge(0, i);
+    }
+    return g;
+}
+
 // Print adjacency matrix
 void printAdjMatrix(Graph &graph) {
     cout << "\nAdjacency Matrix:" << endl;
@@ -168,9 +187,12 @@ void printGraphInfo(Graph &graph) {
 }
 
 // Print colored graph
-void printColoredGraph(Graph &graph, int colors[]) {
+void printColoredGraph(Graph &graph, int colors[], int highlight = -1) {
     cout << "\nColored Graph:" << endl;
     for (int i = 0; i < graph.vertices; i++) {
+        if (i == highlight) cout << ">>> ";
+        else cout << "    ";
+        
         cout << "Vertex " << setw(2) << i << " [Color " << colors[i] << "] -> ";
         bool first = true;
         for (int j = 0; j < graph.vertices; j++) {
@@ -232,8 +254,18 @@ bool graphColoringUtil(Graph &graph, int m, int colors[], int vertex) {
             colors[vertex] = c;
             stats.colorAssignments++;
             
+            if (stepByStep) {
+                cout << "\nAssigning color " << c << " to vertex " << vertex << endl;
+                printColoredGraph(graph, colors, vertex);
+                usleep(300000);
+            }
+            
             if (graphColoringUtil(graph, m, colors, vertex + 1)) {
                 return true;
+            }
+            
+            if (stepByStep) {
+                cout << "\nBacktracking from vertex " << vertex << endl;
             }
             
             colors[vertex] = 0;
@@ -265,6 +297,12 @@ int greedyColoring(Graph &graph, int colors[]) {
     
     colors[0] = 1;
     
+    if (stepByStep) {
+        cout << "\nAssigning color 1 to vertex 0" << endl;
+        printColoredGraph(graph, colors, 0);
+        usleep(300000);
+    }
+    
     for (int u = 1; u < graph.vertices; u++) {
         bool available[MAX_VERTICES];
         for (int i = 0; i < MAX_VERTICES; i++) {
@@ -283,6 +321,12 @@ int greedyColoring(Graph &graph, int colors[]) {
         }
         
         colors[u] = color;
+        
+        if (stepByStep) {
+            cout << "\nAssigning color " << color << " to vertex " << u << endl;
+            printColoredGraph(graph, colors, u);
+            usleep(300000);
+        }
     }
     
     return countColors(colors, graph.vertices);
@@ -298,6 +342,14 @@ int welshPowell(Graph &graph, int colors[]) {
     
     sort(degreeVertex.rbegin(), degreeVertex.rend());
     
+    if (stepByStep) {
+        cout << "\nVertex ordering by degree (descending):" << endl;
+        for (auto p : degreeVertex) {
+            cout << "Vertex " << p.second << " (degree " << p.first << ")" << endl;
+        }
+        usleep(500000);
+    }
+    
     for (int i = 0; i < graph.vertices; i++) {
         colors[i] = 0;
     }
@@ -309,6 +361,12 @@ int welshPowell(Graph &graph, int colors[]) {
         
         if (colors[vertex] == 0) {
             colors[vertex] = currentColor;
+            
+            if (stepByStep) {
+                cout << "\nAssigning color " << currentColor << " to vertex " << vertex << endl;
+                printColoredGraph(graph, colors, vertex);
+                usleep(300000);
+            }
             
             for (int j = i + 1; j < graph.vertices; j++) {
                 int v = degreeVertex[j].second;
@@ -325,6 +383,12 @@ int welshPowell(Graph &graph, int colors[]) {
                     
                     if (canColor) {
                         colors[v] = currentColor;
+                        
+                        if (stepByStep) {
+                            cout << "\nAlso assigning color " << currentColor << " to vertex " << v << endl;
+                            printColoredGraph(graph, colors, v);
+                            usleep(300000);
+                        }
                     }
                 }
             }
@@ -336,7 +400,7 @@ int welshPowell(Graph &graph, int colors[]) {
     return countColors(colors, graph.vertices);
 }
 
-// DSatur algorithm (Degree of Saturation)
+// DSatur algorithm
 int dsatur(Graph &graph, int colors[]) {
     for (int i = 0; i < graph.vertices; i++) {
         colors[i] = 0;
@@ -355,6 +419,12 @@ int dsatur(Graph &graph, int colors[]) {
     
     colors[maxDegreeVertex] = 1;
     int colored = 1;
+    
+    if (stepByStep) {
+        cout << "\nStarting with highest degree vertex " << maxDegreeVertex << " (degree " << maxDegree << ")" << endl;
+        printColoredGraph(graph, colors, maxDegreeVertex);
+        usleep(300000);
+    }
     
     while (colored < graph.vertices) {
         int maxSat = -1;
@@ -392,6 +462,13 @@ int dsatur(Graph &graph, int colors[]) {
         
         colors[maxSatVertex] = color;
         colored++;
+        
+        if (stepByStep) {
+            cout << "\nVertex " << maxSatVertex << " (saturation " << maxSat << ", degree " << maxSatDegree << ")" << endl;
+            cout << "Assigning color " << color << endl;
+            printColoredGraph(graph, colors, maxSatVertex);
+            usleep(300000);
+        }
     }
     
     return countColors(colors, graph.vertices);
@@ -440,7 +517,9 @@ int main() {
     cout << "3. Cycle graph (Cn)" << endl;
     cout << "4. Bipartite graph (Km,n)" << endl;
     cout << "5. Petersen graph" << endl;
-    cout << "Enter choice (1-5): ";
+    cout << "6. Wheel graph (Wn)" << endl;
+    cout << "7. Star graph (Sn)" << endl;
+    cout << "Enter choice (1-7): ";
     cin >> choice;
     
     Graph graph(0);
@@ -490,6 +569,16 @@ int main() {
         graph = createBipartiteGraph(m, n);
     } else if (choice == 5) {
         graph = createPetersenGraph();
+    } else if (choice == 6) {
+        int n;
+        cout << "\nEnter n for wheel graph Wn: ";
+        cin >> n;
+        graph = createWheelGraph(n);
+    } else if (choice == 7) {
+        int n;
+        cout << "\nEnter n for star graph Sn: ";
+        cin >> n;
+        graph = createStarGraph(n);
     } else {
         cout << "Invalid choice!" << endl;
         return 1;
@@ -508,6 +597,17 @@ int main() {
     cout << "5. Compare all algorithms" << endl;
     cout << "Enter choice (1-5): ";
     cin >> mode;
+    
+    if (mode != 5) {
+        int vizMode;
+        cout << "\nSelect visualization mode:" << endl;
+        cout << "1. Instant solution" << endl;
+        cout << "2. Step-by-step visualization" << endl;
+        cout << "Enter choice (1-2): ";
+        cin >> vizMode;
+        
+        stepByStep = (vizMode == 2);
+    }
     
     int colors[MAX_VERTICES];
     
@@ -543,7 +643,7 @@ int main() {
         auto duration = duration_cast<microseconds>(end - start);
         
         cout << "\n✓ Colors used: " << colorsUsed << endl;
-        printColoredGraph(graph, colors);
+        if (!stepByStep) printColoredGraph(graph, colors);
         
         if (validateColoring(graph, colors)) {
             cout << "\n✓ Coloring is valid!" << endl;
@@ -560,7 +660,7 @@ int main() {
         auto duration = duration_cast<microseconds>(end - start);
         
         cout << "\n✓ Colors used: " << colorsUsed << endl;
-        printColoredGraph(graph, colors);
+        if (!stepByStep) printColoredGraph(graph, colors);
         
         if (validateColoring(graph, colors)) {
             cout << "\n✓ Coloring is valid!" << endl;
@@ -577,7 +677,7 @@ int main() {
         auto duration = duration_cast<microseconds>(end - start);
         
         cout << "\n✓ Colors used: " << colorsUsed << endl;
-        printColoredGraph(graph, colors);
+        if (!stepByStep) printColoredGraph(graph, colors);
         
         if (validateColoring(graph, colors)) {
             cout << "\n✓ Coloring is valid!" << endl;
