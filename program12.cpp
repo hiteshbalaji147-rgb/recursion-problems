@@ -255,6 +255,15 @@ void printColoredGraph(Graph &graph, int colors[], int highlight = -1) {
     }
 }
 
+// Count colors used
+int countColors(int colors[], int n) {
+    int maxColor = 0;
+    for (int i = 0; i < n; i++) {
+        maxColor = max(maxColor, colors[i]);
+    }
+    return maxColor;
+}
+
 // Print color classes
 void printColorClasses(Graph &graph, int colors[]) {
     int maxColor = countColors(colors, graph.vertices);
@@ -312,15 +321,6 @@ bool validateColoring(Graph &graph, int colors[]) {
         }
     }
     return true;
-}
-
-// Count colors used
-int countColors(int colors[], int n) {
-    int maxColor = 0;
-    for (int i = 0; i < n; i++) {
-        maxColor = max(maxColor, colors[i]);
-    }
-    return maxColor;
 }
 
 // Check if color assignment is safe
@@ -599,6 +599,72 @@ void printStats(string algorithm = "") {
     cout << "========================================" << endl;
 }
 
+// Print complexity analysis
+void printComplexityAnalysis() {
+    cout << "\n========================================" << endl;
+    cout << "      Complexity Analysis              " << endl;
+    cout << "========================================" << endl;
+    cout << "\n1. Backtracking:" << endl;
+    cout << "   Time: O(m^V) worst case" << endl;
+    cout << "   Space: O(V) for recursion stack" << endl;
+    cout << "   Best for: Finding exact chromatic number" << endl;
+    
+    cout << "\n2. Greedy Coloring:" << endl;
+    cout << "   Time: O(V^2) with adjacency matrix" << endl;
+    cout << "   Space: O(V) for color array" << endl;
+    cout << "   Best for: Fast approximate solutions" << endl;
+    
+    cout << "\n3. Welsh-Powell:" << endl;
+    cout << "   Time: O(V^2) with sorting" << endl;
+    cout << "   Space: O(V) for color array" << endl;
+    cout << "   Best for: Degree-based heuristic" << endl;
+    
+    cout << "\n4. DSatur:" << endl;
+    cout << "   Time: O(V^2) with saturation calculation" << endl;
+    cout << "   Space: O(V) for color array" << endl;
+    cout << "   Best for: Best heuristic performance" << endl;
+    
+    cout << "\nNote: V = vertices, m = colors" << endl;
+    cout << "========================================" << endl;
+}
+
+// Print applications
+void printApplications() {
+    cout << "\n========================================" << endl;
+    cout << "      Real-World Applications          " << endl;
+    cout << "========================================" << endl;
+    cout << "\n1. Register Allocation (Compilers)" << endl;
+    cout << "   - Vertices: Variables" << endl;
+    cout << "   - Edges: Simultaneous live variables" << endl;
+    cout << "   - Colors: CPU registers" << endl;
+    
+    cout << "\n2. Exam Scheduling" << endl;
+    cout << "   - Vertices: Courses" << endl;
+    cout << "   - Edges: Students taking both courses" << endl;
+    cout << "   - Colors: Time slots" << endl;
+    
+    cout << "\n3. Frequency Assignment" << endl;
+    cout << "   - Vertices: Radio transmitters" << endl;
+    cout << "   - Edges: Interference zones" << endl;
+    cout << "   - Colors: Frequencies" << endl;
+    
+    cout << "\n4. Map Coloring" << endl;
+    cout << "   - Vertices: Regions/Countries" << endl;
+    cout << "   - Edges: Shared borders" << endl;
+    cout << "   - Colors: Map colors" << endl;
+    
+    cout << "\n5. Sudoku Solving" << endl;
+    cout << "   - Vertices: Cells" << endl;
+    cout << "   - Edges: Same row/column/box" << endl;
+    cout << "   - Colors: Numbers 1-9" << endl;
+    
+    cout << "\n6. Task Scheduling" << endl;
+    cout << "   - Vertices: Tasks" << endl;
+    cout << "   - Edges: Conflicting tasks" << endl;
+    cout << "   - Colors: Time slots/Resources" << endl;
+    cout << "========================================" << endl;
+}
+
 int main() {
     cout << "========================================" << endl;
     cout << "       Graph Coloring Problem          " << endl;
@@ -836,6 +902,9 @@ int main() {
         
         cout << "========================================" << endl;
     }
+    
+    printComplexityAnalysis();
+    printApplications();
     
     return 0;
 }
