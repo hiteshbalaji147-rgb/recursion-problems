@@ -76,6 +76,45 @@ struct Graph {
         }
         return adjacentColors.size();
     }
+    
+    bool isBipartite() {
+        int colors[MAX_VERTICES];
+        for (int i = 0; i < vertices; i++) colors[i] = -1;
+        
+        for (int start = 0; start < vertices; start++) {
+            if (colors[start] == -1) {
+                vector<int> queue;
+                queue.push_back(start);
+                colors[start] = 0;
+                
+                int front = 0;
+                while (front < queue.size()) {
+                    int u = queue[front++];
+                    
+                    for (int v = 0; v < vertices; v++) {
+                        if (adjMatrix[u][v]) {
+                            if (colors[v] == -1) {
+                                colors[v] = 1 - colors[u];
+                                queue.push_back(v);
+                            } else if (colors[v] == colors[u]) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return true;
+    }
+    
+    bool isComplete() {
+        for (int i = 0; i < vertices; i++) {
+            for (int j = i + 1; j < vertices; j++) {
+                if (!adjMatrix[i][j]) return false;
+            }
+        }
+        return true;
+    }
 };
 
 // Predefined graphs
@@ -183,6 +222,16 @@ void printGraphInfo(Graph &graph) {
     cout << "Vertices: " << graph.vertices << endl;
     cout << "Edges: " << graph.countEdges() << endl;
     cout << "Max degree: " << graph.getMaxDegree() << endl;
+    cout << "Bipartite: " << (graph.isBipartite() ? "Yes" : "No") << endl;
+    cout << "Complete: " << (graph.isComplete() ? "Yes" : "No") << endl;
+    
+    if (graph.isBipartite()) {
+        cout << "Chromatic number bound: 2" << endl;
+    } else if (graph.isComplete()) {
+        cout << "Chromatic number: " << graph.vertices << endl;
+    } else {
+        cout << "Chromatic number bound: [2, " << graph.getMaxDegree() + 1 << "]" << endl;
+    }
     cout << "========================================" << endl;
 }
 
@@ -204,6 +253,51 @@ void printColoredGraph(Graph &graph, int colors[], int highlight = -1) {
         }
         cout << endl;
     }
+}
+
+// Print color classes
+void printColorClasses(Graph &graph, int colors[]) {
+    int maxColor = countColors(colors, graph.vertices);
+    
+    cout << "\n========================================" << endl;
+    cout << "         Color Classes                 " << endl;
+    cout << "========================================" << endl;
+    
+    for (int c = 1; c <= maxColor; c++) {
+        cout << "Color " << c << ": ";
+        bool first = true;
+        for (int i = 0; i < graph.vertices; i++) {
+            if (colors[i] == c) {
+                if (!first) cout << ", ";
+                cout << i;
+                first = false;
+            }
+        }
+        cout << endl;
+    }
+    
+    cout << "\nIndependent sets (no edges within color class):" << endl;
+    for (int c = 1; c <= maxColor; c++) {
+        vector<int> vertices;
+        for (int i = 0; i < graph.vertices; i++) {
+            if (colors[i] == c) vertices.push_back(i);
+        }
+        
+        bool independent = true;
+        for (int i = 0; i < vertices.size(); i++) {
+            for (int j = i + 1; j < vertices.size(); j++) {
+                if (graph.adjMatrix[vertices[i]][vertices[j]]) {
+                    independent = false;
+                    break;
+                }
+            }
+            if (!independent) break;
+        }
+        
+        cout << "  Color " << c << ": " << (independent ? "✓ Independent" : "✗ Not independent") << endl;
+    }
+    
+    cout << "========================================" << endl;
 }
 
 // Validate coloring
@@ -626,6 +720,7 @@ int main() {
         cout << "\n✓ Chromatic number: " << chromatic << endl;
         cout << "Upper bound (max degree + 1): " << graph.getMaxDegree() + 1 << endl;
         printColoredGraph(graph, colors);
+        printColorClasses(graph, colors);
         
         if (validateColoring(graph, colors)) {
             cout << "\n✓ Coloring is valid!" << endl;
@@ -644,6 +739,7 @@ int main() {
         
         cout << "\n✓ Colors used: " << colorsUsed << endl;
         if (!stepByStep) printColoredGraph(graph, colors);
+        printColorClasses(graph, colors);
         
         if (validateColoring(graph, colors)) {
             cout << "\n✓ Coloring is valid!" << endl;
@@ -661,6 +757,7 @@ int main() {
         
         cout << "\n✓ Colors used: " << colorsUsed << endl;
         if (!stepByStep) printColoredGraph(graph, colors);
+        printColorClasses(graph, colors);
         
         if (validateColoring(graph, colors)) {
             cout << "\n✓ Coloring is valid!" << endl;
@@ -678,6 +775,7 @@ int main() {
         
         cout << "\n✓ Colors used: " << colorsUsed << endl;
         if (!stepByStep) printColoredGraph(graph, colors);
+        printColorClasses(graph, colors);
         
         if (validateColoring(graph, colors)) {
             cout << "\n✓ Coloring is valid!" << endl;
