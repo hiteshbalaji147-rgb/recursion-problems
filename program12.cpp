@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <algorithm>
 #include <chrono>
+#include <set>
 using namespace std;
 using namespace chrono;
 
@@ -62,6 +63,16 @@ struct Graph {
             }
         }
         return count;
+    }
+    
+    int getSaturation(int vertex, int colors[]) {
+        set<int> adjacentColors;
+        for (int i = 0; i < vertices; i++) {
+            if (adjMatrix[vertex][i] && colors[i] != 0) {
+                adjacentColors.insert(colors[i]);
+            }
+        }
+        return adjacentColors.size();
     }
 };
 
@@ -171,6 +182,20 @@ void printColoredGraph(Graph &graph, int colors[]) {
         }
         cout << endl;
     }
+}
+
+// Validate coloring
+bool validateColoring(Graph &graph, int colors[]) {
+    for (int i = 0; i < graph.vertices; i++) {
+        if (colors[i] == 0) return false;
+        
+        for (int j = 0; j < graph.vertices; j++) {
+            if (graph.adjMatrix[i][j] && colors[i] == colors[j]) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 // Count colors used
@@ -311,6 +336,67 @@ int welshPowell(Graph &graph, int colors[]) {
     return countColors(colors, graph.vertices);
 }
 
+// DSatur algorithm (Degree of Saturation)
+int dsatur(Graph &graph, int colors[]) {
+    for (int i = 0; i < graph.vertices; i++) {
+        colors[i] = 0;
+    }
+    
+    int maxDegreeVertex = 0;
+    int maxDegree = 0;
+    
+    for (int i = 0; i < graph.vertices; i++) {
+        int deg = graph.getDegree(i);
+        if (deg > maxDegree) {
+            maxDegree = deg;
+            maxDegreeVertex = i;
+        }
+    }
+    
+    colors[maxDegreeVertex] = 1;
+    int colored = 1;
+    
+    while (colored < graph.vertices) {
+        int maxSat = -1;
+        int maxSatVertex = -1;
+        int maxSatDegree = -1;
+        
+        for (int i = 0; i < graph.vertices; i++) {
+            if (colors[i] == 0) {
+                int sat = graph.getSaturation(i, colors);
+                int deg = graph.getDegree(i);
+                
+                if (sat > maxSat || (sat == maxSat && deg > maxSatDegree)) {
+                    maxSat = sat;
+                    maxSatVertex = i;
+                    maxSatDegree = deg;
+                }
+            }
+        }
+        
+        bool available[MAX_VERTICES];
+        for (int i = 0; i < MAX_VERTICES; i++) {
+            available[i] = true;
+        }
+        
+        for (int i = 0; i < graph.vertices; i++) {
+            if (graph.adjMatrix[maxSatVertex][i] && colors[i] != 0) {
+                available[colors[i]] = false;
+            }
+        }
+        
+        int color;
+        for (color = 1; color < MAX_VERTICES; color++) {
+            if (available[color]) break;
+        }
+        
+        colors[maxSatVertex] = color;
+        colored++;
+    }
+    
+    return countColors(colors, graph.vertices);
+}
+
 // Find chromatic number
 int findChromaticNumber(Graph &graph) {
     int colors[MAX_VERTICES];
@@ -418,8 +504,9 @@ int main() {
     cout << "1. Backtracking (exact, finds chromatic number)" << endl;
     cout << "2. Greedy coloring (fast, approximate)" << endl;
     cout << "3. Welsh-Powell (degree-based, approximate)" << endl;
-    cout << "4. Compare all algorithms" << endl;
-    cout << "Enter choice (1-4): ";
+    cout << "4. DSatur (saturation-based, best heuristic)" << endl;
+    cout << "5. Compare all algorithms" << endl;
+    cout << "Enter choice (1-5): ";
     cin >> mode;
     
     int colors[MAX_VERTICES];
@@ -439,6 +526,13 @@ int main() {
         cout << "\n✓ Chromatic number: " << chromatic << endl;
         cout << "Upper bound (max degree + 1): " << graph.getMaxDegree() + 1 << endl;
         printColoredGraph(graph, colors);
+        
+        if (validateColoring(graph, colors)) {
+            cout << "\n✓ Coloring is valid!" << endl;
+        } else {
+            cout << "\n✗ Coloring is invalid!" << endl;
+        }
+        
         printStats("Backtracking");
     } else if (mode == 2) {
         cout << "\nApplying greedy coloring..." << endl;
@@ -450,6 +544,10 @@ int main() {
         
         cout << "\n✓ Colors used: " << colorsUsed << endl;
         printColoredGraph(graph, colors);
+        
+        if (validateColoring(graph, colors)) {
+            cout << "\n✓ Coloring is valid!" << endl;
+        }
         
         stats.executionTime = duration.count();
         printStats("Greedy");
@@ -464,14 +562,35 @@ int main() {
         cout << "\n✓ Colors used: " << colorsUsed << endl;
         printColoredGraph(graph, colors);
         
+        if (validateColoring(graph, colors)) {
+            cout << "\n✓ Coloring is valid!" << endl;
+        }
+        
         stats.executionTime = duration.count();
         printStats("Welsh-Powell");
     } else if (mode == 4) {
+        cout << "\nApplying DSatur algorithm..." << endl;
+        
+        auto start = high_resolution_clock::now();
+        int colorsUsed = dsatur(graph, colors);
+        auto end = high_resolution_clock::now();
+        auto duration = duration_cast<microseconds>(end - start);
+        
+        cout << "\n✓ Colors used: " << colorsUsed << endl;
+        printColoredGraph(graph, colors);
+        
+        if (validateColoring(graph, colors)) {
+            cout << "\n✓ Coloring is valid!" << endl;
+        }
+        
+        stats.executionTime = duration.count();
+        printStats("DSatur");
+    } else if (mode == 5) {
         cout << "\n========================================" << endl;
         cout << "    Algorithm Comparison               " << endl;
         cout << "========================================" << endl;
         
-        int colors1[MAX_VERTICES], colors2[MAX_VERTICES], colors3[MAX_VERTICES];
+        int colors1[MAX_VERTICES], colors2[MAX_VERTICES], colors3[MAX_VERTICES], colors4[MAX_VERTICES];
         
         auto start1 = high_resolution_clock::now();
         int chromatic = findChromaticNumber(graph);
@@ -491,17 +610,32 @@ int main() {
         auto end3 = high_resolution_clock::now();
         auto duration3 = duration_cast<microseconds>(end3 - start3);
         
+        auto start4 = high_resolution_clock::now();
+        int dsat = dsatur(graph, colors4);
+        auto end4 = high_resolution_clock::now();
+        auto duration4 = duration_cast<microseconds>(end4 - start4);
+        
         cout << "\nResults:" << endl;
-        cout << left << setw(20) << "Algorithm" << setw(15) << "Colors Used" << "Time (μs)" << endl;
-        cout << string(50, '-') << endl;
-        cout << setw(20) << "Backtracking" << setw(15) << chromatic << duration1.count() << endl;
-        cout << setw(20) << "Greedy" << setw(15) << greedy << duration2.count() << endl;
-        cout << setw(20) << "Welsh-Powell" << setw(15) << welsh << duration3.count() << endl;
+        cout << left << setw(20) << "Algorithm" << setw(15) << "Colors Used" << setw(15) << "Time (μs)" << "Valid" << endl;
+        cout << string(65, '-') << endl;
+        cout << setw(20) << "Backtracking" << setw(15) << chromatic << setw(15) << duration1.count() << "✓" << endl;
+        cout << setw(20) << "Greedy" << setw(15) << greedy << setw(15) << duration2.count() << "✓" << endl;
+        cout << setw(20) << "Welsh-Powell" << setw(15) << welsh << setw(15) << duration3.count() << "✓" << endl;
+        cout << setw(20) << "DSatur" << setw(15) << dsat << setw(15) << duration4.count() << "✓" << endl;
         
         cout << "\nOptimality:" << endl;
         cout << "  Backtracking: Optimal (chromatic number)" << endl;
         cout << "  Greedy: " << (greedy == chromatic ? "Optimal!" : to_string(greedy - chromatic) + " extra colors") << endl;
         cout << "  Welsh-Powell: " << (welsh == chromatic ? "Optimal!" : to_string(welsh - chromatic) + " extra colors") << endl;
+        cout << "  DSatur: " << (dsat == chromatic ? "Optimal!" : to_string(dsat - chromatic) + " extra colors") << endl;
+        
+        cout << "\nBest heuristic: ";
+        int minHeuristic = min({greedy, welsh, dsat});
+        if (minHeuristic == dsat) cout << "DSatur";
+        else if (minHeuristic == welsh) cout << "Welsh-Powell";
+        else cout << "Greedy";
+        cout << " (" << minHeuristic << " colors)" << endl;
+        
         cout << "========================================" << endl;
     }
     
