@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <chrono>
 #include <iomanip>
+#include <unistd.h>
 using namespace std;
 using namespace chrono;
 
@@ -16,6 +17,7 @@ struct Stats {
 };
 
 Stats stats;
+bool stepByStep = false;
 
 // Print current subset
 void printSubset(vector<int>& subset) {
@@ -41,26 +43,54 @@ void subsetSumUtil(vector<int>& arr, int target, vector<int>& current,
     
     int currentSum = calculateSum(current);
     
+    if (stepByStep) {
+        cout << "\nRecursion call #" << stats.recursionCalls << endl;
+        cout << "Index: " << index << ", Current subset: ";
+        printSubset(current);
+        cout << ", Sum: " << currentSum << "/" << target << endl;
+        usleep(200000);
+    }
+    
     // Base case: found a solution
     if (currentSum == target) {
         stats.solutionsFound++;
         solutions.push_back(current);
-        if (!findAll) return; // Stop if only need one solution
+        
+        if (stepByStep) {
+            cout << "✓ SOLUTION FOUND: ";
+            printSubset(current);
+            cout << endl;
+            usleep(500000);
+        }
+        
+        if (!findAll) return;
         return;
     }
     
     // Base case: exceeded target or reached end
     if (currentSum > target || index >= arr.size()) {
         stats.backtrackCount++;
+        
+        if (stepByStep && currentSum > target) {
+            cout << "✗ Sum exceeded target, backtracking..." << endl;
+            usleep(200000);
+        }
+        
         return;
     }
     
     // Include current element
+    if (stepByStep) {
+        cout << "→ Including " << arr[index] << endl;
+    }
     current.push_back(arr[index]);
     subsetSumUtil(arr, target, current, index + 1, solutions, findAll);
     current.pop_back();
     
     // Exclude current element
+    if (stepByStep) {
+        cout << "← Excluding " << arr[index] << endl;
+    }
     subsetSumUtil(arr, target, current, index + 1, solutions, findAll);
 }
 
@@ -100,12 +130,22 @@ bool subsetSumDP(vector<int>& arr, int target) {
         for (int j = 1; j <= target; j++) {
             stats.dpCells++;
             
+            if (stepByStep && j <= 10) {
+                cout << "\nDP[" << i << "][" << j << "]: ";
+                cout << "Element = " << arr[i-1] << endl;
+            }
+            
             // Exclude current element
             dp[i][j] = dp[i - 1][j];
             
             // Include current element if possible
             if (j >= arr[i - 1]) {
                 dp[i][j] = dp[i][j] || dp[i - 1][j - arr[i - 1]];
+            }
+            
+            if (stepByStep && j <= 10) {
+                cout << "Result: " << (dp[i][j] ? "true" : "false") << endl;
+                usleep(100000);
             }
         }
     }
@@ -145,10 +185,21 @@ vector<int> findSubsetDP(vector<int>& arr, int target) {
     // Reconstruct the subset
     if (dp[n][target]) {
         int i = n, j = target;
+        
+        if (stepByStep) {
+            cout << "\nReconstructing solution from DP table..." << endl;
+        }
+        
         while (i > 0 && j > 0) {
             // If current element was included
             if (j >= arr[i - 1] && dp[i - 1][j - arr[i - 1]]) {
                 result.push_back(arr[i - 1]);
+                
+                if (stepByStep) {
+                    cout << "Including element: " << arr[i - 1] << endl;
+                    usleep(300000);
+                }
+                
                 j -= arr[i - 1];
             }
             i--;
@@ -206,6 +257,28 @@ vector<vector<int>> findSubsetSumOptimized(vector<int>& arr, int target) {
     return solutions;
 }
 
+// Count subsets with given sum (DP - space optimized)
+int countSubsetsDP(vector<int>& arr, int target) {
+    int n = arr.size();
+    vector<int> dp(target + 1, 0);
+    dp[0] = 1; // One way to make sum 0 (empty subset)
+    
+    stats = Stats();
+    auto start = high_resolution_clock::now();
+    
+    for (int i = 0; i < n; i++) {
+        for (int j = target; j >= arr[i]; j--) {
+            stats.dpCells++;
+            dp[j] += dp[j - arr[i]];
+        }
+    }
+    
+    auto end = high_resolution_clock::now();
+    stats.executionTime = duration_cast<microseconds>(end - start).count();
+    
+    return dp[target];
+}
+
 // Print statistics
 void printStats(string algorithm = "") {
     cout << "\n========================================" << endl;
@@ -248,7 +321,43 @@ void printComplexityAnalysis() {
     cout << "   Space: O(n) - recursion stack" << endl;
     cout << "   Best for: Sorted arrays, early pruning" << endl;
     
+    cout << "\n4. Space-Optimized DP:" << endl;
+    cout << "   Time: O(n × target)" << endl;
+    cout << "   Space: O(target) - 1D array" << endl;
+    cout << "   Best for: Counting subsets" << endl;
+    
     cout << "\nNote: n = array size, target = target sum" << endl;
+    cout << "========================================" << endl;
+}
+
+// Print applications
+void printApplications() {
+    cout << "\n========================================" << endl;
+    cout << "      Real-World Applications          " << endl;
+    cout << "========================================" << endl;
+    cout << "\n1. Partition Problem" << endl;
+    cout << "   - Divide items into equal-sum groups" << endl;
+    cout << "   - Load balancing, resource allocation" << endl;
+    
+    cout << "\n2. Knapsack Problem" << endl;
+    cout << "   - Select items within weight/value limit" << endl;
+    cout << "   - Cargo loading, budget allocation" << endl;
+    
+    cout << "\n3. Change Making" << endl;
+    cout << "   - Find coin combinations for amount" << endl;
+    cout << "   - Currency systems, vending machines" << endl;
+    
+    cout << "\n4. Portfolio Selection" << endl;
+    cout << "   - Choose investments to meet target" << endl;
+    cout << "   - Financial planning, asset allocation" << endl;
+    
+    cout << "\n5. Task Scheduling" << endl;
+    cout << "   - Select tasks within time budget" << endl;
+    cout << "   - Project management, resource planning" << endl;
+    
+    cout << "\n6. Cryptography" << endl;
+    cout << "   - Subset sum in cryptographic protocols" << endl;
+    cout << "   - Security systems, encryption" << endl;
     cout << "========================================" << endl;
 }
 
@@ -274,6 +383,7 @@ int main() {
     printSubset(arr);
     cout << endl;
     cout << "Target sum: " << target << endl;
+    cout << "Array sum: " << calculateSum(arr) << endl;
     
     int choice;
     cout << "\nSelect algorithm:" << endl;
@@ -281,9 +391,21 @@ int main() {
     cout << "2. Dynamic Programming (check existence)" << endl;
     cout << "3. DP with reconstruction (find one solution)" << endl;
     cout << "4. Optimized Backtracking (sorted + pruning)" << endl;
-    cout << "5. Compare all algorithms" << endl;
-    cout << "Enter choice (1-5): ";
+    cout << "5. Count subsets (space-optimized DP)" << endl;
+    cout << "6. Compare all algorithms" << endl;
+    cout << "Enter choice (1-6): ";
     cin >> choice;
+    
+    if (choice >= 1 && choice <= 5) {
+        int vizMode;
+        cout << "\nSelect visualization mode:" << endl;
+        cout << "1. Instant solution" << endl;
+        cout << "2. Step-by-step visualization" << endl;
+        cout << "Enter choice (1-2): ";
+        cin >> vizMode;
+        
+        stepByStep = (vizMode == 2);
+    }
     
     if (choice == 1) {
         vector<vector<int>> solutions = findSubsetSumBacktracking(arr, target);
@@ -362,6 +484,17 @@ int main() {
         printStats("Optimized Backtracking");
         
     } else if (choice == 5) {
+        int count = countSubsetsDP(arr, target);
+        
+        cout << "\n========================================" << endl;
+        cout << "           Results                     " << endl;
+        cout << "========================================" << endl;
+        
+        cout << "Number of subsets with sum = " << target << ": " << count << endl;
+        
+        printStats("Space-Optimized DP");
+        
+    } else if (choice == 6) {
         cout << "\n========================================" << endl;
         cout << "    Algorithm Comparison               " << endl;
         cout << "========================================" << endl;
@@ -382,6 +515,10 @@ int main() {
         vector<vector<int>> solutions4 = findSubsetSumOptimized(arr, target);
         Stats stats4 = stats;
         
+        // Count subsets
+        int count = countSubsetsDP(arr, target);
+        Stats stats5 = stats;
+        
         cout << "\nResults:" << endl;
         cout << left << setw(25) << "Algorithm" << setw(15) << "Solutions" << setw(15) << "Time (μs)" << endl;
         cout << string(55, '-') << endl;
@@ -389,19 +526,24 @@ int main() {
         cout << setw(25) << "DP (existence)" << setw(15) << (exists ? "Yes" : "No") << setw(15) << stats2.executionTime << endl;
         cout << setw(25) << "DP (reconstruction)" << setw(15) << (solution3.empty() ? 0 : 1) << setw(15) << stats3.executionTime << endl;
         cout << setw(25) << "Optimized Backtracking" << setw(15) << solutions4.size() << setw(15) << stats4.executionTime << endl;
+        cout << setw(25) << "Count Subsets (DP)" << setw(15) << count << setw(15) << stats5.executionTime << endl;
         
         cout << "\nFastest: ";
-        long long minTime = min({stats1.executionTime, stats2.executionTime, stats3.executionTime, stats4.executionTime});
+        long long minTime = min({stats1.executionTime, stats2.executionTime, stats3.executionTime, stats4.executionTime, stats5.executionTime});
         if (minTime == stats2.executionTime) cout << "DP (existence check)";
         else if (minTime == stats3.executionTime) cout << "DP (reconstruction)";
         else if (minTime == stats4.executionTime) cout << "Optimized Backtracking";
+        else if (minTime == stats5.executionTime) cout << "Count Subsets (DP)";
         else cout << "Backtracking";
         cout << " (" << minTime << " μs)" << endl;
+        
+        cout << "\nMost solutions found: " << max(solutions1.size(), solutions4.size()) << endl;
         
         cout << "========================================" << endl;
     }
     
     printComplexityAnalysis();
+    printApplications();
     
     return 0;
 }
