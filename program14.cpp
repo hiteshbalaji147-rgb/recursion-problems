@@ -5,6 +5,7 @@
 #include <set>
 #include <iomanip>
 #include <map>
+#include <algorithm>
 using namespace std;
 using namespace chrono;
 
@@ -13,6 +14,7 @@ struct Stats {
     int recursionCalls = 0;
     int solutionsFound = 0;
     int backtrackCount = 0;
+    int uniqueSolutions = 0;
     long long executionTime = 0;
 };
 
@@ -23,6 +25,12 @@ bool stepByStep = false;
 map<int, int> knownSolutions = {
     {1, 1}, {4, 2}, {5, 10}, {6, 4}, {7, 40}, {8, 92},
     {9, 352}, {10, 724}, {11, 2680}, {12, 14200}, {13, 73712}, {14, 365596}
+};
+
+// Unique solutions (considering symmetries)
+map<int, int> uniqueSolutions = {
+    {1, 1}, {4, 1}, {5, 2}, {6, 1}, {7, 6}, {8, 12},
+    {9, 46}, {10, 92}, {11, 341}, {12, 1787}, {13, 9233}, {14, 45752}
 };
 
 // Print the chessboard with colors
@@ -147,6 +155,56 @@ void printBoardWithAttacks(vector<vector<int>>& board, int n) {
         cout << endl;
     }
     cout << endl;
+}
+
+// Rotate board 90 degrees clockwise
+vector<vector<int>> rotateBoard(vector<vector<int>>& board, int n) {
+    vector<vector<int>> rotated(n, vector<int>(n, 0));
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            rotated[j][n - 1 - i] = board[i][j];
+        }
+    }
+    return rotated;
+}
+
+// Flip board horizontally
+vector<vector<int>> flipBoard(vector<vector<int>>& board, int n) {
+    vector<vector<int>> flipped(n, vector<int>(n, 0));
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            flipped[i][n - 1 - j] = board[i][j];
+        }
+    }
+    return flipped;
+}
+
+// Convert board to string for comparison
+string boardToString(vector<vector<int>>& board, int n) {
+    string result = "";
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            result += to_string(board[i][j]);
+        }
+    }
+    return result;
+}
+
+// Check if two boards are equivalent (considering symmetries)
+bool areSymmetric(vector<vector<int>>& board1, vector<vector<int>>& board2, int n) {
+    vector<vector<int>> current = board1;
+    
+    // Check all 8 symmetries (4 rotations × 2 flips)
+    for (int rot = 0; rot < 4; rot++) {
+        if (boardToString(current, n) == boardToString(board2, n)) return true;
+        
+        vector<vector<int>> flipped = flipBoard(current, n);
+        if (boardToString(flipped, n) == boardToString(board2, n)) return true;
+        
+        current = rotateBoard(current, n);
+    }
+    
+    return false;
 }
 
 // Validate if solution is correct
@@ -369,6 +427,22 @@ vector<vector<vector<int>>> solveNQueensOptimized(int n, bool findAll = true) {
     
     stats.executionTime = duration_cast<microseconds>(end - start).count();
     
+    // Count unique solutions
+    vector<vector<vector<int>>> uniqueSols;
+    for (auto& sol : solutions) {
+        bool isUnique = true;
+        for (auto& unique : uniqueSols) {
+            if (areSymmetric(sol, unique, n)) {
+                isUnique = false;
+                break;
+            }
+        }
+        if (isUnique) {
+            uniqueSols.push_back(sol);
+        }
+    }
+    stats.uniqueSolutions = uniqueSols.size();
+    
     return solutions;
 }
 
@@ -398,6 +472,12 @@ void printStats(string algorithm = "") {
     cout << "========================================" << endl;
     cout << "Recursion calls: " << stats.recursionCalls << endl;
     cout << "Solutions found: " << stats.solutionsFound << endl;
+    
+    if (stats.uniqueSolutions > 0) {
+        cout << "Unique solutions: " << stats.uniqueSolutions << endl;
+        cout << "Symmetry factor: " << (double)stats.solutionsFound / stats.uniqueSolutions << "x" << endl;
+    }
+    
     cout << "Backtrack operations: " << stats.backtrackCount << endl;
     cout << "Execution time: " << stats.executionTime << " μs" << endl;
     cout << "========================================" << endl;
@@ -424,6 +504,10 @@ void printComplexityAnalysis() {
     cout << "   Approximate: (N!)/(2.54^N)" << endl;
     cout << "   No polynomial-time algorithm known" << endl;
     
+    cout << "\n4. Symmetry Reduction:" << endl;
+    cout << "   8 symmetries per solution (4 rotations × 2 flips)" << endl;
+    cout << "   Unique solutions ≈ Total solutions / 8" << endl;
+    
     cout << "\nNote: N = board size" << endl;
     cout << "========================================" << endl;
 }
@@ -433,15 +517,50 @@ void printKnownSolutions() {
     cout << "\n========================================" << endl;
     cout << "    Known N-Queens Solutions           " << endl;
     cout << "========================================" << endl;
-    cout << "\n" << left << setw(10) << "N" << setw(20) << "Solutions" << endl;
-    cout << string(30, '-') << endl;
+    cout << "\n" << left << setw(10) << "N" << setw(15) << "Total" << setw(15) << "Unique" << endl;
+    cout << string(40, '-') << endl;
     
     for (auto& p : knownSolutions) {
-        cout << setw(10) << p.first << setw(20) << p.second << endl;
+        cout << setw(10) << p.first << setw(15) << p.second;
+        if (uniqueSolutions.find(p.first) != uniqueSolutions.end()) {
+            cout << setw(15) << uniqueSolutions[p.first];
+        }
+        cout << endl;
     }
     
-    cout << "\nNote: Solutions for N > 14 take" << endl;
-    cout << "significant computation time." << endl;
+    cout << "\nNote: Unique = considering symmetries" << endl;
+    cout << "Solutions for N > 14 take significant time" << endl;
+    cout << "========================================" << endl;
+}
+
+// Print applications
+void printApplications() {
+    cout << "\n========================================" << endl;
+    cout << "      Real-World Applications          " << endl;
+    cout << "========================================" << endl;
+    cout << "\n1. Constraint Satisfaction Problems" << endl;
+    cout << "   - Scheduling, resource allocation" << endl;
+    cout << "   - Timetabling, task assignment" << endl;
+    
+    cout << "\n2. VLSI Design" << endl;
+    cout << "   - Component placement on chips" << endl;
+    cout << "   - Avoiding signal interference" << endl;
+    
+    cout << "\n3. Parallel Memory Systems" << endl;
+    cout << "   - Memory module access patterns" << endl;
+    cout << "   - Conflict-free memory access" << endl;
+    
+    cout << "\n4. Deadlock Prevention" << endl;
+    cout << "   - Resource allocation in OS" << endl;
+    cout << "   - Avoiding circular dependencies" << endl;
+    
+    cout << "\n5. Network Security" << endl;
+    cout << "   - Firewall rule placement" << endl;
+    cout << "   - Non-conflicting security policies" << endl;
+    
+    cout << "\n6. Game Theory & AI" << endl;
+    cout << "   - Strategy optimization" << endl;
+    cout << "   - Adversarial search algorithms" << endl;
     cout << "========================================" << endl;
 }
 
@@ -466,7 +585,11 @@ int main() {
     
     // Show expected solution count if known
     if (knownSolutions.find(n) != knownSolutions.end()) {
-        cout << "Expected solutions: " << knownSolutions[n] << endl;
+        cout << "Expected solutions: " << knownSolutions[n];
+        if (uniqueSolutions.find(n) != uniqueSolutions.end()) {
+            cout << " (" << uniqueSolutions[n] << " unique)";
+        }
+        cout << endl;
     }
     
     int choice;
@@ -613,6 +736,13 @@ int main() {
         
         cout << "\nSpeedup: " << fixed << setprecision(2) 
              << (double)stats1.executionTime / stats2.executionTime << "x" << endl;
+        
+        if (stats2.uniqueSolutions > 0) {
+            cout << "Unique solutions: " << stats2.uniqueSolutions << endl;
+            cout << "Symmetry factor: " << fixed << setprecision(2) 
+                 << (double)solutions2.size() / stats2.uniqueSolutions << "x" << endl;
+        }
+        
         cout << "========================================" << endl;
         
     } else if (choice == 6) {
@@ -620,6 +750,7 @@ int main() {
     }
     
     printComplexityAnalysis();
+    printApplications();
     
     return 0;
 }
