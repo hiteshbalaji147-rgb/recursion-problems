@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <set>
 #include <iomanip>
+#include <map>
 using namespace std;
 using namespace chrono;
 
@@ -17,6 +18,12 @@ struct Stats {
 
 Stats stats;
 bool stepByStep = false;
+
+// Known solution counts for N-Queens (precomputed)
+map<int, int> knownSolutions = {
+    {1, 1}, {4, 2}, {5, 10}, {6, 4}, {7, 40}, {8, 92},
+    {9, 352}, {10, 724}, {11, 2680}, {12, 14200}, {13, 73712}, {14, 365596}
+};
 
 // Print the chessboard with colors
 void printBoard(vector<vector<int>>& board, int n) {
@@ -396,6 +403,48 @@ void printStats(string algorithm = "") {
     cout << "========================================" << endl;
 }
 
+// Print complexity analysis
+void printComplexityAnalysis() {
+    cout << "\n========================================" << endl;
+    cout << "      Complexity Analysis              " << endl;
+    cout << "========================================" << endl;
+    cout << "\n1. Basic Backtracking:" << endl;
+    cout << "   Time: O(N!) - tries all permutations" << endl;
+    cout << "   Space: O(N²) - board + O(N) recursion" << endl;
+    cout << "   Safety check: O(N) per placement" << endl;
+    
+    cout << "\n2. Optimized with Sets:" << endl;
+    cout << "   Time: O(N!) - same search space" << endl;
+    cout << "   Space: O(N) - sets + recursion" << endl;
+    cout << "   Safety check: O(1) with hash sets" << endl;
+    cout << "   Improvement: Faster constant factors" << endl;
+    
+    cout << "\n3. Theoretical Bounds:" << endl;
+    cout << "   Solutions grow exponentially with N" << endl;
+    cout << "   Approximate: (N!)/(2.54^N)" << endl;
+    cout << "   No polynomial-time algorithm known" << endl;
+    
+    cout << "\nNote: N = board size" << endl;
+    cout << "========================================" << endl;
+}
+
+// Print known solutions table
+void printKnownSolutions() {
+    cout << "\n========================================" << endl;
+    cout << "    Known N-Queens Solutions           " << endl;
+    cout << "========================================" << endl;
+    cout << "\n" << left << setw(10) << "N" << setw(20) << "Solutions" << endl;
+    cout << string(30, '-') << endl;
+    
+    for (auto& p : knownSolutions) {
+        cout << setw(10) << p.first << setw(20) << p.second << endl;
+    }
+    
+    cout << "\nNote: Solutions for N > 14 take" << endl;
+    cout << "significant computation time." << endl;
+    cout << "========================================" << endl;
+}
+
 int main() {
     cout << "========================================" << endl;
     cout << "         N-Queens Problem              " << endl;
@@ -415,6 +464,11 @@ int main() {
         return 0;
     }
     
+    // Show expected solution count if known
+    if (knownSolutions.find(n) != knownSolutions.end()) {
+        cout << "Expected solutions: " << knownSolutions[n] << endl;
+    }
+    
     int choice;
     cout << "\nSelect algorithm:" << endl;
     cout << "1. Basic backtracking" << endl;
@@ -422,7 +476,8 @@ int main() {
     cout << "3. Count all solutions" << endl;
     cout << "4. Validate custom solution" << endl;
     cout << "5. Compare algorithms" << endl;
-    cout << "Enter choice (1-5): ";
+    cout << "6. View known solutions table" << endl;
+    cout << "Enter choice (1-6): ";
     cin >> choice;
     
     if (choice == 1 || choice == 2) {
@@ -494,6 +549,11 @@ int main() {
         cout << "========================================" << endl;
         cout << "Total number of solutions: " << count << endl;
         
+        if (knownSolutions.find(n) != knownSolutions.end()) {
+            cout << "Expected: " << knownSolutions[n] << endl;
+            cout << "Match: " << (count == knownSolutions[n] ? "✓ Correct" : "✗ Mismatch") << endl;
+        }
+        
         printStats("Optimized");
         
     } else if (choice == 4) {
@@ -554,7 +614,12 @@ int main() {
         cout << "\nSpeedup: " << fixed << setprecision(2) 
              << (double)stats1.executionTime / stats2.executionTime << "x" << endl;
         cout << "========================================" << endl;
+        
+    } else if (choice == 6) {
+        printKnownSolutions();
     }
+    
+    printComplexityAnalysis();
     
     return 0;
 }
