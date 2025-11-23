@@ -3,6 +3,7 @@
 #include <chrono>
 #include <unistd.h>
 #include <set>
+#include <iomanip>
 using namespace std;
 using namespace chrono;
 
@@ -66,6 +67,135 @@ void printBoardUnicode(vector<vector<int>>& board, int n) {
         cout << endl;
     }
     cout << endl;
+}
+
+// Mark all attacked positions
+void markAttackedPositions(vector<vector<int>>& board, int n) {
+    vector<vector<int>> attacked(n, vector<int>(n, 0));
+    
+    // Copy queen positions
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (board[i][j] == 1) {
+                attacked[i][j] = 1;
+            }
+        }
+    }
+    
+    // Mark attacked positions
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (board[i][j] == 1) {
+                // Mark row
+                for (int k = 0; k < n; k++) {
+                    if (attacked[i][k] != 1) attacked[i][k] = -1;
+                }
+                
+                // Mark column
+                for (int k = 0; k < n; k++) {
+                    if (attacked[k][j] != 1) attacked[k][j] = -1;
+                }
+                
+                // Mark diagonals
+                for (int k = 0; k < n; k++) {
+                    for (int l = 0; l < n; l++) {
+                        if (abs(i - k) == abs(j - l) && attacked[k][l] != 1) {
+                            attacked[k][l] = -1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    board = attacked;
+}
+
+// Print board with attacked positions
+void printBoardWithAttacks(vector<vector<int>>& board, int n) {
+    vector<vector<int>> attacked = board;
+    markAttackedPositions(attacked, n);
+    
+    cout << "\n  ";
+    for (int i = 0; i < n; i++) {
+        cout << " " << i << " ";
+    }
+    cout << endl;
+    
+    for (int i = 0; i < n; i++) {
+        cout << i << " ";
+        for (int j = 0; j < n; j++) {
+            if (attacked[i][j] == 1) {
+                cout << " ♛ ";
+            } else if (attacked[i][j] == -1) {
+                cout << " × ";
+            } else {
+                if ((i + j) % 2 == 0) {
+                    cout << " ░ ";
+                } else {
+                    cout << " ▓ ";
+                }
+            }
+        }
+        cout << endl;
+    }
+    cout << endl;
+}
+
+// Validate if solution is correct
+bool validateSolution(vector<vector<int>>& board, int n) {
+    int queenCount = 0;
+    
+    // Count queens
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (board[i][j] == 1) {
+                queenCount++;
+            }
+        }
+    }
+    
+    if (queenCount != n) {
+        return false;
+    }
+    
+    // Check if any two queens attack each other
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (board[i][j] == 1) {
+                // Check row
+                for (int k = j + 1; k < n; k++) {
+                    if (board[i][k] == 1) return false;
+                }
+                
+                // Check column
+                for (int k = i + 1; k < n; k++) {
+                    if (board[k][j] == 1) return false;
+                }
+                
+                // Check diagonals
+                for (int k = 1; k < n; k++) {
+                    if (i + k < n && j + k < n && board[i + k][j + k] == 1) return false;
+                    if (i + k < n && j - k >= 0 && board[i + k][j - k] == 1) return false;
+                }
+            }
+        }
+    }
+    
+    return true;
+}
+
+// Get queen positions as string
+string getQueenPositions(vector<vector<int>>& board, int n) {
+    string result = "";
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (board[i][j] == 1) {
+                result += "(" + to_string(i) + "," + to_string(j) + ") ";
+            }
+        }
+    }
+    return result;
 }
 
 // Check if placing queen at (row, col) is safe
@@ -290,8 +420,9 @@ int main() {
     cout << "1. Basic backtracking" << endl;
     cout << "2. Optimized backtracking (with sets)" << endl;
     cout << "3. Count all solutions" << endl;
-    cout << "4. Compare algorithms" << endl;
-    cout << "Enter choice (1-4): ";
+    cout << "4. Validate custom solution" << endl;
+    cout << "5. Compare algorithms" << endl;
+    cout << "Enter choice (1-5): ";
     cin >> choice;
     
     if (choice == 1 || choice == 2) {
@@ -334,14 +465,20 @@ int main() {
         } else {
             cout << "Found " << solutions.size() << " solution(s):" << endl;
             
-            int displayLimit = min((int)solutions.size(), 5);
+            int displayLimit = min((int)solutions.size(), 3);
             for (int i = 0; i < displayLimit; i++) {
                 cout << "\n--- Solution " << (i + 1) << " ---";
+                cout << "\nQueen positions: " << getQueenPositions(solutions[i], n);
                 printBoardUnicode(solutions[i], n);
+                
+                cout << "With attacked positions:";
+                printBoardWithAttacks(solutions[i], n);
+                
+                cout << "Valid: " << (validateSolution(solutions[i], n) ? "✓ Yes" : "✗ No") << endl;
             }
             
-            if (solutions.size() > 5) {
-                cout << "\n... and " << (solutions.size() - 5) << " more solutions" << endl;
+            if (solutions.size() > 3) {
+                cout << "\n... and " << (solutions.size() - 3) << " more solutions" << endl;
             }
         }
         
@@ -360,6 +497,36 @@ int main() {
         printStats("Optimized");
         
     } else if (choice == 4) {
+        cout << "\nEnter queen positions (row col) for " << n << " queens:" << endl;
+        vector<vector<int>> board(n, vector<int>(n, 0));
+        
+        for (int i = 0; i < n; i++) {
+            int row, col;
+            cout << "Queen " << (i + 1) << ": ";
+            cin >> row >> col;
+            
+            if (row >= 0 && row < n && col >= 0 && col < n) {
+                board[row][col] = 1;
+            } else {
+                cout << "Invalid position!" << endl;
+                i--;
+            }
+        }
+        
+        cout << "\n========================================" << endl;
+        cout << "           Validation                  " << endl;
+        cout << "========================================" << endl;
+        
+        cout << "\nYour solution:";
+        printBoardUnicode(board, n);
+        
+        cout << "With attacked positions:";
+        printBoardWithAttacks(board, n);
+        
+        bool valid = validateSolution(board, n);
+        cout << "\nValidation result: " << (valid ? "✓ VALID SOLUTION!" : "✗ INVALID - Queens attack each other") << endl;
+        
+    } else if (choice == 5) {
         cout << "\n========================================" << endl;
         cout << "    Algorithm Comparison               " << endl;
         cout << "========================================" << endl;
@@ -373,16 +540,19 @@ int main() {
         Stats stats2 = stats;
         
         cout << "\nResults:" << endl;
-        cout << "Algorithm              Solutions    Time (μs)    Recursions    Backtracks" << endl;
-        cout << string(75, '-') << endl;
-        cout << "Basic Backtracking     " << solutions1.size() << "           " 
-             << stats1.executionTime << "         " << stats1.recursionCalls 
-             << "          " << stats1.backtrackCount << endl;
-        cout << "Optimized (Sets)       " << solutions2.size() << "           " 
-             << stats2.executionTime << "         " << stats2.recursionCalls 
-             << "          " << stats2.backtrackCount << endl;
+        cout << left << setw(25) << "Algorithm" << setw(12) << "Solutions" 
+             << setw(15) << "Time (μs)" << setw(15) << "Recursions" 
+             << setw(15) << "Backtracks" << endl;
+        cout << string(82, '-') << endl;
+        cout << setw(25) << "Basic Backtracking" << setw(12) << solutions1.size()
+             << setw(15) << stats1.executionTime << setw(15) << stats1.recursionCalls 
+             << setw(15) << stats1.backtrackCount << endl;
+        cout << setw(25) << "Optimized (Sets)" << setw(12) << solutions2.size()
+             << setw(15) << stats2.executionTime << setw(15) << stats2.recursionCalls 
+             << setw(15) << stats2.backtrackCount << endl;
         
-        cout << "\nSpeedup: " << (double)stats1.executionTime / stats2.executionTime << "x" << endl;
+        cout << "\nSpeedup: " << fixed << setprecision(2) 
+             << (double)stats1.executionTime / stats2.executionTime << "x" << endl;
         cout << "========================================" << endl;
     }
     
