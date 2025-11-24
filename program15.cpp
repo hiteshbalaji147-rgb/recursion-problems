@@ -3,6 +3,7 @@
 #include <chrono>
 #include <unistd.h>
 #include <set>
+#include <iomanip>
 using namespace std;
 using namespace chrono;
 
@@ -318,6 +319,49 @@ void printStats(string algorithm = "") {
     cout << "========================================" << endl;
 }
 
+// Print complexity analysis
+void printComplexityAnalysis() {
+    cout << "\n========================================" << endl;
+    cout << "      Complexity Analysis              " << endl;
+    cout << "========================================" << endl;
+    cout << "\n1. Basic Backtracking:" << endl;
+    cout << "   Time: O(9^m) where m = empty cells" << endl;
+    cout << "   Space: O(m) for recursion stack" << endl;
+    cout << "   Worst case: tries all possibilities" << endl;
+    
+    cout << "\n2. Optimized (MRV Heuristic):" << endl;
+    cout << "   Time: O(9^m) but with better pruning" << endl;
+    cout << "   Space: O(m) for recursion stack" << endl;
+    cout << "   Improvement: Chooses cells with" << endl;
+    cout << "   minimum remaining values first" << endl;
+    
+    cout << "\n3. Practical Performance:" << endl;
+    cout << "   Easy puzzles: < 1ms" << endl;
+    cout << "   Medium puzzles: 1-10ms" << endl;
+    cout << "   Hard puzzles: 10-100ms" << endl;
+    cout << "   Extreme puzzles: 100ms-1s" << endl;
+    
+    cout << "\nNote: m = number of empty cells" << endl;
+    cout << "========================================" << endl;
+}
+
+// Input custom puzzle
+void inputCustomPuzzle(int grid[N][N]) {
+    cout << "\nEnter Sudoku puzzle (use 0 for empty cells):" << endl;
+    cout << "Enter 9 rows of 9 numbers each:" << endl;
+    
+    for (int i = 0; i < N; i++) {
+        cout << "Row " << (i + 1) << ": ";
+        for (int j = 0; j < N; j++) {
+            cin >> grid[i][j];
+            if (grid[i][j] < 0 || grid[i][j] > 9) {
+                cout << "Invalid input! Use numbers 0-9 only." << endl;
+                j--;
+            }
+        }
+    }
+}
+
 int main() {
     cout << "========================================" << endl;
     cout << "         Sudoku Solver                 " << endl;
@@ -365,85 +409,158 @@ int main() {
     
     string difficulty[] = {"Easy", "Medium", "Hard"};
     
-    int choice;
-    cout << "\nSelect puzzle difficulty:" << endl;
-    cout << "1. Easy" << endl;
-    cout << "2. Medium" << endl;
-    cout << "3. Hard" << endl;
+    int mode;
+    cout << "\nSelect mode:" << endl;
+    cout << "1. Solve preset puzzle" << endl;
+    cout << "2. Input custom puzzle" << endl;
+    cout << "3. Compare algorithms" << endl;
     cout << "Enter choice (1-3): ";
-    cin >> choice;
+    cin >> mode;
     
-    if (choice < 1 || choice > 3) {
+    if (mode < 1 || mode > 3) {
         cout << "Invalid choice!" << endl;
         return 1;
-    }
-    
-    int algorithm;
-    cout << "\nSelect algorithm:" << endl;
-    cout << "1. Basic backtracking" << endl;
-    cout << "2. Optimized backtracking (MRV heuristic)" << endl;
-    cout << "Enter choice (1-2): ";
-    cin >> algorithm;
-    
-    if (algorithm < 1 || algorithm > 2) {
-        cout << "Invalid choice!" << endl;
-        return 1;
-    }
-    
-    if (algorithm == 1) {
-        int vizMode;
-        cout << "\nSelect visualization:" << endl;
-        cout << "1. Instant solution" << endl;
-        cout << "2. Step-by-step visualization" << endl;
-        cout << "Enter choice (1-2): ";
-        cin >> vizMode;
-        
-        stepByStep = (vizMode == 2);
     }
     
     int grid[N][N];
     int original[N][N];
-    copyGrid(puzzles[choice - 1], grid);
-    copyGrid(puzzles[choice - 1], original);
+    
+    if (mode == 1 || mode == 3) {
+        int choice;
+        cout << "\nSelect puzzle difficulty:" << endl;
+        cout << "1. Easy" << endl;
+        cout << "2. Medium" << endl;
+        cout << "3. Hard" << endl;
+        cout << "Enter choice (1-3): ";
+        cin >> choice;
+        
+        if (choice < 1 || choice > 3) {
+            cout << "Invalid choice!" << endl;
+            return 1;
+        }
+        
+        copyGrid(puzzles[choice - 1], grid);
+        copyGrid(puzzles[choice - 1], original);
+        
+        cout << "\n========================================" << endl;
+        cout << "    " << difficulty[choice - 1] << " Puzzle" << endl;
+        cout << "========================================" << endl;
+    } else {
+        inputCustomPuzzle(grid);
+        copyGrid(grid, original);
+        
+        cout << "\n========================================" << endl;
+        cout << "    Custom Puzzle" << endl;
+        cout << "========================================" << endl;
+    }
     
     int emptyCells = countEmptyCells(grid);
-    
-    cout << "\n========================================" << endl;
-    cout << "    " << difficulty[choice - 1] << " Puzzle" << endl;
-    cout << "========================================" << endl;
     cout << "Empty cells: " << emptyCells << endl;
     cout << "Given cells: " << (81 - emptyCells) << endl;
     
     cout << "\nOriginal Sudoku Puzzle:" << endl;
     printGrid(grid);
     
-    stats = Stats();
-    
-    auto start = high_resolution_clock::now();
-    bool solved;
-    
-    if (algorithm == 1) {
-        solved = solveSudoku(grid, original);
-    } else {
-        solved = solveSudokuOptimized(grid);
-    }
-    
-    auto end = high_resolution_clock::now();
-    
-    stats.executionTime = duration_cast<microseconds>(end - start).count();
-    
-    if (solved) {
-        cout << "\n✓ Solved Successfully!" << endl;
-        cout << "\nSolved Sudoku (green = filled by algorithm):" << endl;
-        printGridColored(grid, original);
+    if (mode == 3) {
+        // Compare algorithms
+        cout << "\n========================================" << endl;
+        cout << "    Algorithm Comparison               " << endl;
+        cout << "========================================" << endl;
         
-        bool valid = validateSudoku(grid);
-        cout << "Validation: " << (valid ? "✓ Valid solution" : "✗ Invalid solution") << endl;
+        int grid1[N][N], grid2[N][N];
+        copyGrid(original, grid1);
+        copyGrid(original, grid2);
+        
+        // Basic backtracking
+        stats = Stats();
+        auto start1 = high_resolution_clock::now();
+        bool solved1 = solveSudoku(grid1);
+        auto end1 = high_resolution_clock::now();
+        stats.executionTime = duration_cast<microseconds>(end1 - start1).count();
+        Stats stats1 = stats;
+        
+        // Optimized backtracking
+        stats = Stats();
+        auto start2 = high_resolution_clock::now();
+        bool solved2 = solveSudokuOptimized(grid2);
+        auto end2 = high_resolution_clock::now();
+        stats.executionTime = duration_cast<microseconds>(end2 - start2).count();
+        Stats stats2 = stats;
+        
+        cout << "\nResults:" << endl;
+        cout << left << setw(25) << "Algorithm" << setw(12) << "Solved" 
+             << setw(15) << "Time (μs)" << setw(15) << "Recursions" 
+             << setw(15) << "Backtracks" << endl;
+        cout << string(82, '-') << endl;
+        cout << setw(25) << "Basic Backtracking" << setw(12) << (solved1 ? "Yes" : "No")
+             << setw(15) << stats1.executionTime << setw(15) << stats1.recursionCalls 
+             << setw(15) << stats1.backtrackCount << endl;
+        cout << setw(25) << "Optimized (MRV)" << setw(12) << (solved2 ? "Yes" : "No")
+             << setw(15) << stats2.executionTime << setw(15) << stats2.recursionCalls 
+             << setw(15) << stats2.backtrackCount << endl;
+        
+        if (stats2.executionTime > 0) {
+            cout << "\nSpeedup: " << fixed << setprecision(2) 
+                 << (double)stats1.executionTime / stats2.executionTime << "x" << endl;
+        }
+        
+        cout << "\nSolved Sudoku:" << endl;
+        printGridColored(grid2, original);
+        
     } else {
-        cout << "\n✗ No solution exists!" << endl;
+        int algorithm;
+        cout << "\nSelect algorithm:" << endl;
+        cout << "1. Basic backtracking" << endl;
+        cout << "2. Optimized backtracking (MRV heuristic)" << endl;
+        cout << "Enter choice (1-2): ";
+        cin >> algorithm;
+        
+        if (algorithm < 1 || algorithm > 2) {
+            cout << "Invalid choice!" << endl;
+            return 1;
+        }
+        
+        if (algorithm == 1) {
+            int vizMode;
+            cout << "\nSelect visualization:" << endl;
+            cout << "1. Instant solution" << endl;
+            cout << "2. Step-by-step visualization" << endl;
+            cout << "Enter choice (1-2): ";
+            cin >> vizMode;
+            
+            stepByStep = (vizMode == 2);
+        }
+        
+        stats = Stats();
+        
+        auto start = high_resolution_clock::now();
+        bool solved;
+        
+        if (algorithm == 1) {
+            solved = solveSudoku(grid, original);
+        } else {
+            solved = solveSudokuOptimized(grid);
+        }
+        
+        auto end = high_resolution_clock::now();
+        
+        stats.executionTime = duration_cast<microseconds>(end - start).count();
+        
+        if (solved) {
+            cout << "\n✓ Solved Successfully!" << endl;
+            cout << "\nSolved Sudoku (green = filled by algorithm):" << endl;
+            printGridColored(grid, original);
+            
+            bool valid = validateSudoku(grid);
+            cout << "Validation: " << (valid ? "✓ Valid solution" : "✗ Invalid solution") << endl;
+        } else {
+            cout << "\n✗ No solution exists!" << endl;
+        }
+        
+        printStats(algorithm == 1 ? "Basic" : "Optimized");
     }
     
-    printStats(algorithm == 1 ? "Basic" : "Optimized");
+    printComplexityAnalysis();
     
     return 0;
 }
