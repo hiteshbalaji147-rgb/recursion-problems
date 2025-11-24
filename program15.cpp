@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <set>
 #include <iomanip>
+#include <cstdlib>
+#include <ctime>
 using namespace std;
 using namespace chrono;
 
@@ -244,6 +246,97 @@ bool solveSudokuOptimized(int grid[N][N]) {
     return false;
 }
 
+// Fill grid with valid solution (for puzzle generation)
+bool fillGrid(int grid[N][N]) {
+    int row, col;
+    
+    if (!findEmptyLocation(grid, row, col)) {
+        return true;
+    }
+    
+    // Try random numbers
+    vector<int> nums = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+    random_shuffle(nums.begin(), nums.end());
+    
+    for (int num : nums) {
+        if (isSafe(grid, row, col, num)) {
+            grid[row][col] = num;
+            
+            if (fillGrid(grid)) {
+                return true;
+            }
+            
+            grid[row][col] = 0;
+        }
+    }
+    
+    return false;
+}
+
+// Generate Sudoku puzzle
+void generatePuzzle(int grid[N][N], int difficulty) {
+    // Initialize empty grid
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            grid[i][j] = 0;
+        }
+    }
+    
+    // Fill grid with valid solution
+    fillGrid(grid);
+    
+    // Remove cells based on difficulty
+    int cellsToRemove;
+    if (difficulty == 1) cellsToRemove = 35;      // Easy
+    else if (difficulty == 2) cellsToRemove = 45; // Medium
+    else cellsToRemove = 55;                       // Hard
+    
+    int removed = 0;
+    while (removed < cellsToRemove) {
+        int row = rand() % N;
+        int col = rand() % N;
+        
+        if (grid[row][col] != 0) {
+            grid[row][col] = 0;
+            removed++;
+        }
+    }
+}
+
+// Analyze puzzle difficulty
+string analyzeDifficulty(int grid[N][N]) {
+    int emptyCells = 0;
+    int cellsWithOnePossibility = 0;
+    int cellsWithTwoPossibilities = 0;
+    
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            if (grid[i][j] == 0) {
+                emptyCells++;
+                
+                int possibilities = 0;
+                for (int num = 1; num <= 9; num++) {
+                    if (isSafe(grid, i, j, num)) {
+                        possibilities++;
+                    }
+                }
+                
+                if (possibilities == 1) cellsWithOnePossibility++;
+                else if (possibilities == 2) cellsWithTwoPossibilities++;
+            }
+        }
+    }
+    
+    cout << "\nDifficulty Analysis:" << endl;
+    cout << "Empty cells: " << emptyCells << endl;
+    cout << "Cells with 1 possibility: " << cellsWithOnePossibility << endl;
+    cout << "Cells with 2 possibilities: " << cellsWithTwoPossibilities << endl;
+    
+    if (emptyCells < 40) return "Easy";
+    else if (emptyCells < 50) return "Medium";
+    else return "Hard";
+}
+
 // Validate Sudoku solution
 bool validateSudoku(int grid[N][N]) {
     // Check all rows
@@ -345,6 +438,37 @@ void printComplexityAnalysis() {
     cout << "========================================" << endl;
 }
 
+// Print applications
+void printApplications() {
+    cout << "\n========================================" << endl;
+    cout << "      Real-World Applications          " << endl;
+    cout << "========================================" << endl;
+    cout << "\n1. Constraint Satisfaction Problems" << endl;
+    cout << "   - Resource allocation" << endl;
+    cout << "   - Scheduling and timetabling" << endl;
+    
+    cout << "\n2. Logic Puzzles & Games" << endl;
+    cout << "   - Puzzle generation algorithms" << endl;
+    cout << "   - Game AI and solvers" << endl;
+    
+    cout << "\n3. Cryptography" << endl;
+    cout << "   - Latin square generation" << endl;
+    cout << "   - Constraint-based encryption" << endl;
+    
+    cout << "\n4. Operations Research" << endl;
+    cout << "   - Assignment problems" << endl;
+    cout << "   - Optimization with constraints" << endl;
+    
+    cout << "\n5. Testing & Verification" << endl;
+    cout << "   - Test case generation" << endl;
+    cout << "   - Constraint validation" << endl;
+    
+    cout << "\n6. Educational Tools" << endl;
+    cout << "   - Teaching logical reasoning" << endl;
+    cout << "   - Algorithm visualization" << endl;
+    cout << "========================================" << endl;
+}
+
 // Input custom puzzle
 void inputCustomPuzzle(int grid[N][N]) {
     cout << "\nEnter Sudoku puzzle (use 0 for empty cells):" << endl;
@@ -363,6 +487,8 @@ void inputCustomPuzzle(int grid[N][N]) {
 }
 
 int main() {
+    srand(time(0));
+    
     cout << "========================================" << endl;
     cout << "         Sudoku Solver                 " << endl;
     cout << "========================================" << endl;
@@ -414,10 +540,12 @@ int main() {
     cout << "1. Solve preset puzzle" << endl;
     cout << "2. Input custom puzzle" << endl;
     cout << "3. Compare algorithms" << endl;
-    cout << "Enter choice (1-3): ";
+    cout << "4. Generate random puzzle" << endl;
+    cout << "5. Analyze puzzle difficulty" << endl;
+    cout << "Enter choice (1-5): ";
     cin >> mode;
     
-    if (mode < 1 || mode > 3) {
+    if (mode < 1 || mode > 5) {
         cout << "Invalid choice!" << endl;
         return 1;
     }
@@ -445,13 +573,48 @@ int main() {
         cout << "\n========================================" << endl;
         cout << "    " << difficulty[choice - 1] << " Puzzle" << endl;
         cout << "========================================" << endl;
-    } else {
+    } else if (mode == 2) {
         inputCustomPuzzle(grid);
         copyGrid(grid, original);
         
         cout << "\n========================================" << endl;
         cout << "    Custom Puzzle" << endl;
         cout << "========================================" << endl;
+    } else if (mode == 4) {
+        int choice;
+        cout << "\nSelect puzzle difficulty:" << endl;
+        cout << "1. Easy" << endl;
+        cout << "2. Medium" << endl;
+        cout << "3. Hard" << endl;
+        cout << "Enter choice (1-3): ";
+        cin >> choice;
+        
+        if (choice < 1 || choice > 3) {
+            cout << "Invalid choice!" << endl;
+            return 1;
+        }
+        
+        generatePuzzle(grid, choice);
+        copyGrid(grid, original);
+        
+        cout << "\n========================================" << endl;
+        cout << "    Generated " << difficulty[choice - 1] << " Puzzle" << endl;
+        cout << "========================================" << endl;
+    } else if (mode == 5) {
+        inputCustomPuzzle(grid);
+        copyGrid(grid, original);
+        
+        cout << "\n========================================" << endl;
+        cout << "    Puzzle Analysis" << endl;
+        cout << "========================================" << endl;
+        
+        string diff = analyzeDifficulty(grid);
+        cout << "Estimated difficulty: " << diff << endl;
+        
+        cout << "\nPuzzle:" << endl;
+        printGrid(grid);
+        
+        return 0;
     }
     
     int emptyCells = countEmptyCells(grid);
@@ -561,6 +724,7 @@ int main() {
     }
     
     printComplexityAnalysis();
+    printApplications();
     
     return 0;
 }
