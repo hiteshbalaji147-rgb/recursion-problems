@@ -1,8 +1,20 @@
 #include <iostream>
 #include <vector>
+#include <chrono>
 using namespace std;
+using namespace chrono;
 
 #define N 9
+
+// Statistics structure
+struct Stats {
+    int recursionCalls = 0;
+    int backtrackCount = 0;
+    int cellsFilled = 0;
+    long long executionTime = 0;
+};
+
+Stats stats;
 
 // Print the Sudoku grid
 void printGrid(int grid[N][N]) {
@@ -19,6 +31,32 @@ void printGrid(int grid[N][N]) {
                 cout << ". ";
             } else {
                 cout << grid[row][col] << " ";
+            }
+        }
+        cout << endl;
+    }
+    cout << endl;
+}
+
+// Print grid with colors
+void printGridColored(int grid[N][N], int original[N][N]) {
+    cout << "\n";
+    for (int row = 0; row < N; row++) {
+        if (row % 3 == 0 && row != 0) {
+            cout << "------+-------+------" << endl;
+        }
+        for (int col = 0; col < N; col++) {
+            if (col % 3 == 0 && col != 0) {
+                cout << "| ";
+            }
+            if (grid[row][col] == 0) {
+                cout << ". ";
+            } else if (original[row][col] != 0) {
+                // Original numbers (given)
+                cout << grid[row][col] << " ";
+            } else {
+                // Solved numbers (filled by algorithm)
+                cout << "\033[1;32m" << grid[row][col] << "\033[0m ";
             }
         }
         cout << endl;
@@ -70,6 +108,8 @@ bool findEmptyLocation(int grid[N][N], int &row, int &col) {
 
 // Solve Sudoku using backtracking
 bool solveSudoku(int grid[N][N]) {
+    stats.recursionCalls++;
+    
     int row, col;
     
     // If no empty location, puzzle is solved
@@ -82,6 +122,7 @@ bool solveSudoku(int grid[N][N]) {
         if (isSafe(grid, row, col, num)) {
             // Place number
             grid[row][col] = num;
+            stats.cellsFilled++;
             
             // Recursively solve rest
             if (solveSudoku(grid)) {
@@ -90,10 +131,45 @@ bool solveSudoku(int grid[N][N]) {
             
             // Backtrack
             grid[row][col] = 0;
+            stats.backtrackCount++;
         }
     }
     
     return false;
+}
+
+// Count empty cells
+int countEmptyCells(int grid[N][N]) {
+    int count = 0;
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            if (grid[i][j] == 0) {
+                count++;
+            }
+        }
+    }
+    return count;
+}
+
+// Copy grid
+void copyGrid(int source[N][N], int dest[N][N]) {
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            dest[i][j] = source[i][j];
+        }
+    }
+}
+
+// Print statistics
+void printStats() {
+    cout << "\n========================================" << endl;
+    cout << "           Statistics                  " << endl;
+    cout << "========================================" << endl;
+    cout << "Recursion calls: " << stats.recursionCalls << endl;
+    cout << "Cells filled: " << stats.cellsFilled << endl;
+    cout << "Backtrack operations: " << stats.backtrackCount << endl;
+    cout << "Execution time: " << stats.executionTime << " μs" << endl;
+    cout << "========================================" << endl;
 }
 
 int main() {
@@ -101,28 +177,94 @@ int main() {
     cout << "         Sudoku Solver                 " << endl;
     cout << "========================================" << endl;
     
-    // Example Sudoku puzzle (0 represents empty cells)
-    int grid[N][N] = {
-        {5, 3, 0, 0, 7, 0, 0, 0, 0},
-        {6, 0, 0, 1, 9, 5, 0, 0, 0},
-        {0, 9, 8, 0, 0, 0, 0, 6, 0},
-        {8, 0, 0, 0, 6, 0, 0, 0, 3},
-        {4, 0, 0, 8, 0, 3, 0, 0, 1},
-        {7, 0, 0, 0, 2, 0, 0, 0, 6},
-        {0, 6, 0, 0, 0, 0, 2, 8, 0},
-        {0, 0, 0, 4, 1, 9, 0, 0, 5},
-        {0, 0, 0, 0, 8, 0, 0, 7, 9}
+    // Multiple test puzzles
+    int puzzles[3][N][N] = {
+        // Easy puzzle
+        {
+            {5, 3, 0, 0, 7, 0, 0, 0, 0},
+            {6, 0, 0, 1, 9, 5, 0, 0, 0},
+            {0, 9, 8, 0, 0, 0, 0, 6, 0},
+            {8, 0, 0, 0, 6, 0, 0, 0, 3},
+            {4, 0, 0, 8, 0, 3, 0, 0, 1},
+            {7, 0, 0, 0, 2, 0, 0, 0, 6},
+            {0, 6, 0, 0, 0, 0, 2, 8, 0},
+            {0, 0, 0, 4, 1, 9, 0, 0, 5},
+            {0, 0, 0, 0, 8, 0, 0, 7, 9}
+        },
+        // Medium puzzle
+        {
+            {0, 0, 0, 6, 0, 0, 4, 0, 0},
+            {7, 0, 0, 0, 0, 3, 6, 0, 0},
+            {0, 0, 0, 0, 9, 1, 0, 8, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 5, 0, 1, 8, 0, 0, 0, 3},
+            {0, 0, 0, 3, 0, 6, 0, 4, 5},
+            {0, 4, 0, 2, 0, 0, 0, 6, 0},
+            {9, 0, 3, 0, 0, 0, 0, 0, 0},
+            {0, 2, 0, 0, 0, 0, 1, 0, 0}
+        },
+        // Hard puzzle
+        {
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 3, 0, 8, 5},
+            {0, 0, 1, 0, 2, 0, 0, 0, 0},
+            {0, 0, 0, 5, 0, 7, 0, 0, 0},
+            {0, 0, 4, 0, 0, 0, 1, 0, 0},
+            {0, 9, 0, 0, 0, 0, 0, 0, 0},
+            {5, 0, 0, 0, 0, 0, 0, 7, 3},
+            {0, 0, 2, 0, 1, 0, 0, 0, 0},
+            {0, 0, 0, 0, 4, 0, 0, 0, 9}
+        }
     };
+    
+    string difficulty[] = {"Easy", "Medium", "Hard"};
+    
+    int choice;
+    cout << "\nSelect puzzle difficulty:" << endl;
+    cout << "1. Easy" << endl;
+    cout << "2. Medium" << endl;
+    cout << "3. Hard" << endl;
+    cout << "Enter choice (1-3): ";
+    cin >> choice;
+    
+    if (choice < 1 || choice > 3) {
+        cout << "Invalid choice!" << endl;
+        return 1;
+    }
+    
+    int grid[N][N];
+    int original[N][N];
+    copyGrid(puzzles[choice - 1], grid);
+    copyGrid(puzzles[choice - 1], original);
+    
+    int emptyCells = countEmptyCells(grid);
+    
+    cout << "\n========================================" << endl;
+    cout << "    " << difficulty[choice - 1] << " Puzzle" << endl;
+    cout << "========================================" << endl;
+    cout << "Empty cells: " << emptyCells << endl;
+    cout << "Given cells: " << (81 - emptyCells) << endl;
     
     cout << "\nOriginal Sudoku Puzzle:" << endl;
     printGrid(grid);
     
-    if (solveSudoku(grid)) {
-        cout << "\nSolved Sudoku:" << endl;
-        printGrid(grid);
+    stats = Stats();
+    
+    auto start = high_resolution_clock::now();
+    bool solved = solveSudoku(grid);
+    auto end = high_resolution_clock::now();
+    
+    stats.executionTime = duration_cast<microseconds>(end - start).count();
+    
+    if (solved) {
+        cout << "\n✓ Solved Successfully!" << endl;
+        cout << "\nSolved Sudoku (green = filled by algorithm):" << endl;
+        printGridColored(grid, original);
     } else {
-        cout << "\nNo solution exists!" << endl;
+        cout << "\n✗ No solution exists!" << endl;
     }
+    
+    printStats();
     
     return 0;
 }
