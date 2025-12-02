@@ -1,11 +1,25 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <chrono>
+#include <unistd.h>
 using namespace std;
+using namespace chrono;
 
 #define MAX_V 10  // Maximum number of vertices
 
 int numVertices;  // Actual number of vertices
+
+// Statistics structure
+struct Stats {
+    int recursionCalls = 0;
+    int backtrackCount = 0;
+    int colorAssignments = 0;
+    long long executionTime = 0;
+};
+
+Stats stats;
+bool stepByStep = false;
 
 // Function to check if it's safe to color vertex v with color c
 bool isSafe(int v, bool graph[MAX_V][MAX_V], int color[], int c) {
@@ -18,8 +32,30 @@ bool isSafe(int v, bool graph[MAX_V][MAX_V], int color[], int c) {
     return true;
 }
 
+// Visualize current state
+void visualizeState(int color[], int currentVertex, int attemptedColor) {
+    string colors[] = {"Uncolored", "Red", "Green", "Blue", "Yellow", "Orange", "Purple", "Pink", "Brown", "Gray", "Cyan"};
+    
+    cout << "\n--- Current State ---" << endl;
+    cout << "Trying to color vertex " << currentVertex << " with " << colors[attemptedColor] << endl;
+    
+    for (int i = 0; i < numVertices; i++) {
+        if (i == currentVertex) {
+            cout << "→ Vertex " << i << ": " << colors[attemptedColor] << " (attempting)" << endl;
+        } else if (color[i] != 0) {
+            cout << "  Vertex " << i << ": " << colors[color[i]] << " (assigned)" << endl;
+        } else {
+            cout << "  Vertex " << i << ": Uncolored" << endl;
+        }
+    }
+    
+    usleep(500000);  // 0.5 second delay
+}
+
 // Recursive function to solve graph coloring problem
 bool graphColoringUtil(bool graph[MAX_V][MAX_V], int m, int color[], int v) {
+    stats.recursionCalls++;
+    
     // Base case: all vertices are colored
     if (v == numVertices) {
         return true;
@@ -27,9 +63,18 @@ bool graphColoringUtil(bool graph[MAX_V][MAX_V], int m, int color[], int v) {
     
     // Try different colors for vertex v
     for (int c = 1; c <= m; c++) {
+        if (stepByStep) {
+            visualizeState(color, v, c);
+        }
+        
         // Check if assignment of color c to v is safe
         if (isSafe(v, graph, color, c)) {
             color[v] = c;
+            stats.colorAssignments++;
+            
+            if (stepByStep) {
+                cout << "✓ Color " << c << " is safe for vertex " << v << endl;
+            }
             
             // Recursively assign colors to rest of vertices
             if (graphColoringUtil(graph, m, color, v + 1)) {
@@ -37,7 +82,16 @@ bool graphColoringUtil(bool graph[MAX_V][MAX_V], int m, int color[], int v) {
             }
             
             // Backtrack if coloring doesn't lead to solution
+            if (stepByStep) {
+                cout << "✗ Backtracking from vertex " << v << endl;
+            }
+            
             color[v] = 0;
+            stats.backtrackCount++;
+        } else {
+            if (stepByStep) {
+                cout << "✗ Color " << c << " conflicts with adjacent vertices" << endl;
+            }
         }
     }
     
@@ -112,18 +166,48 @@ void printSolution(int color[]) {
     }
 }
 
+// Print statistics
+void printStats() {
+    cout << "\n========================================" << endl;
+    cout << "           Statistics                  " << endl;
+    cout << "========================================" << endl;
+    cout << "Recursion calls: " << stats.recursionCalls << endl;
+    cout << "Color assignments: " << stats.colorAssignments << endl;
+    cout << "Backtrack operations: " << stats.backtrackCount << endl;
+    cout << "Execution time: " << stats.executionTime << " μs" << endl;
+    cout << "========================================" << endl;
+}
+
 // Find chromatic number (minimum colors needed)
 int findChromaticNumber(bool graph[MAX_V][MAX_V]) {
     int color[MAX_V];
+    Stats tempStats = stats;
     
     // Try with increasing number of colors
     for (int m = 1; m <= numVertices; m++) {
+        stats = Stats();  // Reset stats for each attempt
         if (graphColoring(graph, m, color)) {
+            stats = tempStats;  // Restore original stats
             return m;
         }
     }
     
+    stats = tempStats;  // Restore original stats
     return numVertices;
+}
+
+// Count degree of each vertex
+void printDegrees(bool graph[MAX_V][MAX_V]) {
+    cout << "\nVertex Degrees:" << endl;
+    for (int i = 0; i < numVertices; i++) {
+        int degree = 0;
+        for (int j = 0; j < numVertices; j++) {
+            if (graph[i][j]) {
+                degree++;
+            }
+        }
+        cout << "Vertex " << i << ": degree " << degree << endl;
+    }
 }
 
 int main() {
@@ -203,6 +287,7 @@ int main() {
     
     printGraph(graph);
     printEdges(graph);
+    printDegrees(graph);
     
     cout << "\nFinding chromatic number..." << endl;
     int chromaticNumber = findChromaticNumber(graph);
@@ -217,11 +302,29 @@ int main() {
         cout << "Minimum required: " << chromaticNumber << " colors" << endl;
     }
     
+    int vizMode;
+    cout << "\nSelect visualization mode:" << endl;
+    cout << "1. Instant solution" << endl;
+    cout << "2. Step-by-step visualization" << endl;
+    cout << "Enter choice (1-2): ";
+    cin >> vizMode;
+    
+    stepByStep = (vizMode == 2);
+    
     cout << "\nTrying to color graph with " << m << " colors..." << endl;
     cout << "========================================" << endl;
     
+    stats = Stats();
+    
+    auto start = high_resolution_clock::now();
+    
     int color[MAX_V];
-    if (graphColoring(graph, m, color)) {
+    bool solved = graphColoring(graph, m, color);
+    
+    auto end = high_resolution_clock::now();
+    stats.executionTime = duration_cast<microseconds>(end - start).count();
+    
+    if (solved) {
         cout << "\n✓ Solution exists with " << m << " colors!" << endl;
         printSolution(color);
         visualizeColoring(color);
@@ -229,6 +332,8 @@ int main() {
         cout << "\n✗ Solution does not exist with " << m << " colors!" << endl;
         cout << "Try using at least " << chromaticNumber << " colors." << endl;
     }
+    
+    printStats();
     
     return 0;
 }
