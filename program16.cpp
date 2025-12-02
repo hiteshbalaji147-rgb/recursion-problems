@@ -4,6 +4,7 @@
 #include <chrono>
 #include <unistd.h>
 #include <algorithm>
+#include <iomanip>
 using namespace std;
 using namespace chrono;
 
@@ -161,6 +162,15 @@ bool graphColoring(bool graph[MAX_V][MAX_V], int m, int color[], bool useOptimiz
     }
 }
 
+// Copy graph
+void copyGraph(bool source[MAX_V][MAX_V], bool dest[MAX_V][MAX_V]) {
+    for (int i = 0; i < numVertices; i++) {
+        for (int j = 0; j < numVertices; j++) {
+            dest[i][j] = source[i][j];
+        }
+    }
+}
+
 // Print the graph as adjacency matrix
 void printGraph(bool graph[MAX_V][MAX_V]) {
     cout << "\nGraph Adjacency Matrix:" << endl;
@@ -228,6 +238,64 @@ void printStats(string algorithm = "") {
     cout << "========================================" << endl;
 }
 
+// Print complexity analysis
+void printComplexityAnalysis() {
+    cout << "\n========================================" << endl;
+    cout << "      Complexity Analysis              " << endl;
+    cout << "========================================" << endl;
+    cout << "\n1. Basic Backtracking:" << endl;
+    cout << "   Time: O(m^V) where m = colors, V = vertices" << endl;
+    cout << "   Space: O(V) for recursion stack" << endl;
+    cout << "   Worst case: tries all color combinations" << endl;
+    
+    cout << "\n2. Optimized (Largest Degree First):" << endl;
+    cout << "   Time: O(V^2) for greedy approach" << endl;
+    cout << "   Space: O(V) for vertex ordering" << endl;
+    cout << "   Improvement: No backtracking, faster" << endl;
+    cout << "   Trade-off: May use more colors" << endl;
+    
+    cout << "\n3. Chromatic Number:" << endl;
+    cout << "   Finding exact: NP-complete problem" << endl;
+    cout << "   Upper bound: Δ + 1 (max degree + 1)" << endl;
+    cout << "   Lower bound: ω (clique number)" << endl;
+    
+    cout << "\nNote: V = vertices, m = colors, Δ = max degree" << endl;
+    cout << "========================================" << endl;
+}
+
+// Print applications
+void printApplications() {
+    cout << "\n========================================" << endl;
+    cout << "      Real-World Applications          " << endl;
+    cout << "========================================" << endl;
+    cout << "\n1. Scheduling Problems" << endl;
+    cout << "   - Exam timetabling" << endl;
+    cout << "   - Meeting room allocation" << endl;
+    cout << "   - Task scheduling with conflicts" << endl;
+    
+    cout << "\n2. Register Allocation" << endl;
+    cout << "   - Compiler optimization" << endl;
+    cout << "   - CPU register assignment" << endl;
+    
+    cout << "\n3. Map Coloring" << endl;
+    cout << "   - Geographic map coloring" << endl;
+    cout << "   - Political boundary visualization" << endl;
+    
+    cout << "\n4. Frequency Assignment" << endl;
+    cout << "   - Radio frequency allocation" << endl;
+    cout << "   - Mobile network channels" << endl;
+    cout << "   - WiFi channel assignment" << endl;
+    
+    cout << "\n5. Pattern Matching" << endl;
+    cout << "   - Sudoku solving" << endl;
+    cout << "   - Puzzle solving algorithms" << endl;
+    
+    cout << "\n6. Bioinformatics" << endl;
+    cout << "   - DNA sequencing" << endl;
+    cout << "   - Protein structure analysis" << endl;
+    cout << "========================================" << endl;
+}
+
 // Find chromatic number (minimum colors needed)
 int findChromaticNumber(bool graph[MAX_V][MAX_V]) {
     int color[MAX_V];
@@ -249,10 +317,14 @@ int findChromaticNumber(bool graph[MAX_V][MAX_V]) {
 // Count degree of each vertex
 void printDegrees(bool graph[MAX_V][MAX_V]) {
     cout << "\nVertex Degrees:" << endl;
+    int maxDegree = 0;
     for (int i = 0; i < numVertices; i++) {
         int degree = getDegree(graph, i);
         cout << "Vertex " << i << ": degree " << degree << endl;
+        maxDegree = max(maxDegree, degree);
     }
+    cout << "Maximum degree (Δ): " << maxDegree << endl;
+    cout << "Upper bound for chromatic number: " << (maxDegree + 1) << endl;
 }
 
 // Input custom graph
@@ -324,14 +396,15 @@ int main() {
     
     int mode;
     cout << "\nSelect mode:" << endl;
-    cout << "1. Use preset graph" << endl;
-    cout << "2. Input custom graph" << endl;
-    cout << "Enter choice (1-2): ";
+    cout << "1. Solve with single algorithm" << endl;
+    cout << "2. Compare algorithms" << endl;
+    cout << "3. Input custom graph" << endl;
+    cout << "Enter choice (1-3): ";
     cin >> mode;
     
     bool graph[MAX_V][MAX_V];
     
-    if (mode == 1) {
+    if (mode == 1 || mode == 2) {
         int choice;
         cout << "\nSelect test graph:" << endl;
         cout << "1. Pentagon graph (5 vertices)" << endl;
@@ -374,7 +447,7 @@ int main() {
             cout << "Invalid choice!" << endl;
             return 1;
         }
-    } else if (mode == 2) {
+    } else if (mode == 3) {
         inputCustomGraph(graph);
         cout << "\n========================================" << endl;
         cout << "    Custom Graph                       " << endl;
@@ -392,61 +465,120 @@ int main() {
     int chromaticNumber = findChromaticNumber(graph);
     cout << "Chromatic number (minimum colors needed): " << chromaticNumber << endl;
     
-    int m;
-    cout << "\nEnter number of colors to use: ";
-    cin >> m;
-    
-    if (m < chromaticNumber) {
-        cout << "\nWarning: " << m << " colors may not be sufficient!" << endl;
-        cout << "Minimum required: " << chromaticNumber << " colors" << endl;
-    }
-    
-    int algorithm;
-    cout << "\nSelect algorithm:" << endl;
-    cout << "1. Basic backtracking" << endl;
-    cout << "2. Optimized (largest degree first)" << endl;
-    cout << "Enter choice (1-2): ";
-    cin >> algorithm;
-    
-    if (algorithm < 1 || algorithm > 2) {
-        cout << "Invalid choice!" << endl;
-        return 1;
-    }
-    
-    if (algorithm == 1) {
-        int vizMode;
-        cout << "\nSelect visualization mode:" << endl;
-        cout << "1. Instant solution" << endl;
-        cout << "2. Step-by-step visualization" << endl;
-        cout << "Enter choice (1-2): ";
-        cin >> vizMode;
+    if (mode == 2) {
+        // Compare algorithms
+        cout << "\n========================================" << endl;
+        cout << "    Algorithm Comparison               " << endl;
+        cout << "========================================" << endl;
         
-        stepByStep = (vizMode == 2);
-    }
-    
-    cout << "\nTrying to color graph with " << m << " colors..." << endl;
-    cout << "========================================" << endl;
-    
-    stats = Stats();
-    
-    auto start = high_resolution_clock::now();
-    
-    int color[MAX_V];
-    bool solved = graphColoring(graph, m, color, algorithm == 2);
-    
-    auto end = high_resolution_clock::now();
-    stats.executionTime = duration_cast<microseconds>(end - start).count();
-    
-    if (solved) {
-        cout << "\n✓ Solution exists with " << m << " colors!" << endl;
-        printSolution(color);
-        visualizeColoring(color);
+        int m;
+        cout << "\nEnter number of colors to use: ";
+        cin >> m;
+        
+        bool graph1Copy[MAX_V][MAX_V], graph2Copy[MAX_V][MAX_V];
+        copyGraph(graph, graph1Copy);
+        copyGraph(graph, graph2Copy);
+        
+        // Basic backtracking
+        stats = Stats();
+        auto start1 = high_resolution_clock::now();
+        int color1[MAX_V];
+        bool solved1 = graphColoring(graph1Copy, m, color1, false);
+        auto end1 = high_resolution_clock::now();
+        stats.executionTime = duration_cast<microseconds>(end1 - start1).count();
+        Stats stats1 = stats;
+        
+        // Optimized
+        stats = Stats();
+        auto start2 = high_resolution_clock::now();
+        int color2[MAX_V];
+        bool solved2 = graphColoring(graph2Copy, m, color2, true);
+        auto end2 = high_resolution_clock::now();
+        stats.executionTime = duration_cast<microseconds>(end2 - start2).count();
+        Stats stats2 = stats;
+        
+        cout << "\nResults:" << endl;
+        cout << left << setw(25) << "Algorithm" << setw(12) << "Solved" 
+             << setw(15) << "Time (μs)" << setw(15) << "Recursions" 
+             << setw(15) << "Backtracks" << endl;
+        cout << string(82, '-') << endl;
+        cout << setw(25) << "Basic Backtracking" << setw(12) << (solved1 ? "Yes" : "No")
+             << setw(15) << stats1.executionTime << setw(15) << stats1.recursionCalls 
+             << setw(15) << stats1.backtrackCount << endl;
+        cout << setw(25) << "Optimized (LDF)" << setw(12) << (solved2 ? "Yes" : "No")
+             << setw(15) << stats2.executionTime << setw(15) << stats2.recursionCalls 
+             << setw(15) << stats2.backtrackCount << endl;
+        
+        if (stats2.executionTime > 0) {
+            cout << "\nSpeedup: " << fixed << setprecision(2) 
+                 << (double)stats1.executionTime / stats2.executionTime << "x" << endl;
+        }
+        
+        if (solved2) {
+            cout << "\nSolution:" << endl;
+            visualizeColoring(color2);
+        }
+        
     } else {
-        cout << "\n✗ Solution does not exist with " << m << " colors!" << endl;
-        cout << "Try using at least " << chromaticNumber << " colors." << endl;
+        int m;
+        cout << "\nEnter number of colors to use: ";
+        cin >> m;
+        
+        if (m < chromaticNumber) {
+            cout << "\nWarning: " << m << " colors may not be sufficient!" << endl;
+            cout << "Minimum required: " << chromaticNumber << " colors" << endl;
+        }
+        
+        int algorithm;
+        cout << "\nSelect algorithm:" << endl;
+        cout << "1. Basic backtracking" << endl;
+        cout << "2. Optimized (largest degree first)" << endl;
+        cout << "Enter choice (1-2): ";
+        cin >> algorithm;
+        
+        if (algorithm < 1 || algorithm > 2) {
+            cout << "Invalid choice!" << endl;
+            return 1;
+        }
+        
+        if (algorithm == 1) {
+            int vizMode;
+            cout << "\nSelect visualization mode:" << endl;
+            cout << "1. Instant solution" << endl;
+            cout << "2. Step-by-step visualization" << endl;
+            cout << "Enter choice (1-2): ";
+            cin >> vizMode;
+            
+            stepByStep = (vizMode == 2);
+        }
+        
+        cout << "\nTrying to color graph with " << m << " colors..." << endl;
+        cout << "========================================" << endl;
+        
+        stats = Stats();
+        
+        auto start = high_resolution_clock::now();
+        
+        int color[MAX_V];
+        bool solved = graphColoring(graph, m, color, algorithm == 2);
+        
+        auto end = high_resolution_clock::now();
+        stats.executionTime = duration_cast<microseconds>(end - start).count();
+        
+        if (solved) {
+            cout << "\n✓ Solution exists with " << m << " colors!" << endl;
+            printSolution(color);
+            visualizeColoring(color);
+        } else {
+            cout << "\n✗ Solution does not exist with " << m << " colors!" << endl;
+            cout << "Try using at least " << chromaticNumber << " colors." << endl;
+        }
+        
+        printStats(algorithm == 1 ? "Basic" : "Optimized");
     }
     
-    printStats(algorithm == 1 ? "Basic" : "Optimized");
+    printComplexityAnalysis();
+    printApplications();
     
     return 0;
 }
