@@ -3,6 +3,7 @@
 #include <string>
 #include <chrono>
 #include <unistd.h>
+#include <algorithm>
 using namespace std;
 using namespace chrono;
 
@@ -52,8 +53,8 @@ void visualizeState(int color[], int currentVertex, int attemptedColor) {
     usleep(500000);  // 0.5 second delay
 }
 
-// Recursive function to solve graph coloring problem
-bool graphColoringUtil(bool graph[MAX_V][MAX_V], int m, int color[], int v) {
+// Basic backtracking algorithm
+bool graphColoringBasic(bool graph[MAX_V][MAX_V], int m, int color[], int v) {
     stats.recursionCalls++;
     
     // Base case: all vertices are colored
@@ -77,7 +78,7 @@ bool graphColoringUtil(bool graph[MAX_V][MAX_V], int m, int color[], int v) {
             }
             
             // Recursively assign colors to rest of vertices
-            if (graphColoringUtil(graph, m, color, v + 1)) {
+            if (graphColoringBasic(graph, m, color, v + 1)) {
                 return true;
             }
             
@@ -98,19 +99,66 @@ bool graphColoringUtil(bool graph[MAX_V][MAX_V], int m, int color[], int v) {
     return false;
 }
 
-// Main function to solve graph coloring problem
-bool graphColoring(bool graph[MAX_V][MAX_V], int m, int color[]) {
+// Get degree of a vertex
+int getDegree(bool graph[MAX_V][MAX_V], int v) {
+    int degree = 0;
+    for (int i = 0; i < numVertices; i++) {
+        if (graph[v][i]) {
+            degree++;
+        }
+    }
+    return degree;
+}
+
+// Optimized algorithm using largest degree first heuristic
+bool graphColoringOptimized(bool graph[MAX_V][MAX_V], int m, int color[]) {
+    // Create array of vertices sorted by degree (descending)
+    vector<pair<int, int>> vertexDegrees;
+    for (int i = 0; i < numVertices; i++) {
+        vertexDegrees.push_back({getDegree(graph, i), i});
+    }
+    sort(vertexDegrees.rbegin(), vertexDegrees.rend());
+    
     // Initialize all vertices as uncolored
     for (int i = 0; i < numVertices; i++) {
         color[i] = 0;
     }
     
-    // Start coloring from vertex 0
-    if (!graphColoringUtil(graph, m, color, 0)) {
-        return false;
+    // Color vertices in order of decreasing degree
+    for (int i = 0; i < numVertices; i++) {
+        stats.recursionCalls++;
+        int v = vertexDegrees[i].second;
+        
+        // Try colors starting from 1
+        for (int c = 1; c <= m; c++) {
+            if (isSafe(v, graph, color, c)) {
+                color[v] = c;
+                stats.colorAssignments++;
+                break;
+            }
+        }
+        
+        // If no color could be assigned
+        if (color[v] == 0) {
+            return false;
+        }
     }
     
     return true;
+}
+
+// Main function to solve graph coloring problem
+bool graphColoring(bool graph[MAX_V][MAX_V], int m, int color[], bool useOptimized = false) {
+    // Initialize all vertices as uncolored
+    for (int i = 0; i < numVertices; i++) {
+        color[i] = 0;
+    }
+    
+    if (useOptimized) {
+        return graphColoringOptimized(graph, m, color);
+    } else {
+        return graphColoringBasic(graph, m, color, 0);
+    }
 }
 
 // Print the graph as adjacency matrix
@@ -167,9 +215,11 @@ void printSolution(int color[]) {
 }
 
 // Print statistics
-void printStats() {
+void printStats(string algorithm = "") {
     cout << "\n========================================" << endl;
-    cout << "           Statistics                  " << endl;
+    cout << "           Statistics";
+    if (!algorithm.empty()) cout << " (" << algorithm << ")";
+    cout << endl;
     cout << "========================================" << endl;
     cout << "Recursion calls: " << stats.recursionCalls << endl;
     cout << "Color assignments: " << stats.colorAssignments << endl;
@@ -186,7 +236,7 @@ int findChromaticNumber(bool graph[MAX_V][MAX_V]) {
     // Try with increasing number of colors
     for (int m = 1; m <= numVertices; m++) {
         stats = Stats();  // Reset stats for each attempt
-        if (graphColoring(graph, m, color)) {
+        if (graphColoring(graph, m, color, false)) {
             stats = tempStats;  // Restore original stats
             return m;
         }
@@ -200,13 +250,45 @@ int findChromaticNumber(bool graph[MAX_V][MAX_V]) {
 void printDegrees(bool graph[MAX_V][MAX_V]) {
     cout << "\nVertex Degrees:" << endl;
     for (int i = 0; i < numVertices; i++) {
-        int degree = 0;
-        for (int j = 0; j < numVertices; j++) {
-            if (graph[i][j]) {
-                degree++;
-            }
-        }
+        int degree = getDegree(graph, i);
         cout << "Vertex " << i << ": degree " << degree << endl;
+    }
+}
+
+// Input custom graph
+void inputCustomGraph(bool graph[MAX_V][MAX_V]) {
+    cout << "\nEnter number of vertices (max " << MAX_V << "): ";
+    cin >> numVertices;
+    
+    if (numVertices > MAX_V) {
+        cout << "Too many vertices! Using maximum: " << MAX_V << endl;
+        numVertices = MAX_V;
+    }
+    
+    // Initialize graph
+    for (int i = 0; i < numVertices; i++) {
+        for (int j = 0; j < numVertices; j++) {
+            graph[i][j] = false;
+        }
+    }
+    
+    cout << "\nEnter number of edges: ";
+    int edges;
+    cin >> edges;
+    
+    cout << "\nEnter edges (format: vertex1 vertex2):" << endl;
+    for (int i = 0; i < edges; i++) {
+        int u, v;
+        cout << "Edge " << (i + 1) << ": ";
+        cin >> u >> v;
+        
+        if (u >= 0 && u < numVertices && v >= 0 && v < numVertices && u != v) {
+            graph[u][v] = true;
+            graph[v][u] = true;
+        } else {
+            cout << "Invalid edge! Skipping..." << endl;
+            i--;
+        }
     }
 }
 
@@ -240,45 +322,62 @@ int main() {
         {1, 0, 0, 0, 0, 0}
     };
     
-    int choice;
-    cout << "\nSelect test graph:" << endl;
-    cout << "1. Pentagon graph (5 vertices)" << endl;
-    cout << "2. Square graph (4 vertices)" << endl;
-    cout << "3. Star graph (6 vertices)" << endl;
-    cout << "Enter choice (1-3): ";
-    cin >> choice;
+    int mode;
+    cout << "\nSelect mode:" << endl;
+    cout << "1. Use preset graph" << endl;
+    cout << "2. Input custom graph" << endl;
+    cout << "Enter choice (1-2): ";
+    cin >> mode;
     
     bool graph[MAX_V][MAX_V];
     
-    if (choice == 1) {
-        numVertices = 5;
-        for (int i = 0; i < numVertices; i++) {
-            for (int j = 0; j < numVertices; j++) {
-                graph[i][j] = graph1[i][j];
+    if (mode == 1) {
+        int choice;
+        cout << "\nSelect test graph:" << endl;
+        cout << "1. Pentagon graph (5 vertices)" << endl;
+        cout << "2. Square graph (4 vertices)" << endl;
+        cout << "3. Star graph (6 vertices)" << endl;
+        cout << "Enter choice (1-3): ";
+        cin >> choice;
+        
+        if (choice == 1) {
+            numVertices = 5;
+            for (int i = 0; i < numVertices; i++) {
+                for (int j = 0; j < numVertices; j++) {
+                    graph[i][j] = graph1[i][j];
+                }
             }
-        }
-        cout << "\n========================================" << endl;
-        cout << "    Pentagon Graph (Cycle C5)          " << endl;
-        cout << "========================================" << endl;
-    } else if (choice == 2) {
-        numVertices = 4;
-        for (int i = 0; i < numVertices; i++) {
-            for (int j = 0; j < numVertices; j++) {
-                graph[i][j] = graph2[i][j];
+            cout << "\n========================================" << endl;
+            cout << "    Pentagon Graph (Cycle C5)          " << endl;
+            cout << "========================================" << endl;
+        } else if (choice == 2) {
+            numVertices = 4;
+            for (int i = 0; i < numVertices; i++) {
+                for (int j = 0; j < numVertices; j++) {
+                    graph[i][j] = graph2[i][j];
+                }
             }
-        }
-        cout << "\n========================================" << endl;
-        cout << "    Square Graph (Cycle C4)            " << endl;
-        cout << "========================================" << endl;
-    } else if (choice == 3) {
-        numVertices = 6;
-        for (int i = 0; i < numVertices; i++) {
-            for (int j = 0; j < numVertices; j++) {
-                graph[i][j] = graph3[i][j];
+            cout << "\n========================================" << endl;
+            cout << "    Square Graph (Cycle C4)            " << endl;
+            cout << "========================================" << endl;
+        } else if (choice == 3) {
+            numVertices = 6;
+            for (int i = 0; i < numVertices; i++) {
+                for (int j = 0; j < numVertices; j++) {
+                    graph[i][j] = graph3[i][j];
+                }
             }
+            cout << "\n========================================" << endl;
+            cout << "    Star Graph (K1,5)                  " << endl;
+            cout << "========================================" << endl;
+        } else {
+            cout << "Invalid choice!" << endl;
+            return 1;
         }
+    } else if (mode == 2) {
+        inputCustomGraph(graph);
         cout << "\n========================================" << endl;
-        cout << "    Star Graph (K1,5)                  " << endl;
+        cout << "    Custom Graph                       " << endl;
         cout << "========================================" << endl;
     } else {
         cout << "Invalid choice!" << endl;
@@ -302,14 +401,28 @@ int main() {
         cout << "Minimum required: " << chromaticNumber << " colors" << endl;
     }
     
-    int vizMode;
-    cout << "\nSelect visualization mode:" << endl;
-    cout << "1. Instant solution" << endl;
-    cout << "2. Step-by-step visualization" << endl;
+    int algorithm;
+    cout << "\nSelect algorithm:" << endl;
+    cout << "1. Basic backtracking" << endl;
+    cout << "2. Optimized (largest degree first)" << endl;
     cout << "Enter choice (1-2): ";
-    cin >> vizMode;
+    cin >> algorithm;
     
-    stepByStep = (vizMode == 2);
+    if (algorithm < 1 || algorithm > 2) {
+        cout << "Invalid choice!" << endl;
+        return 1;
+    }
+    
+    if (algorithm == 1) {
+        int vizMode;
+        cout << "\nSelect visualization mode:" << endl;
+        cout << "1. Instant solution" << endl;
+        cout << "2. Step-by-step visualization" << endl;
+        cout << "Enter choice (1-2): ";
+        cin >> vizMode;
+        
+        stepByStep = (vizMode == 2);
+    }
     
     cout << "\nTrying to color graph with " << m << " colors..." << endl;
     cout << "========================================" << endl;
@@ -319,7 +432,7 @@ int main() {
     auto start = high_resolution_clock::now();
     
     int color[MAX_V];
-    bool solved = graphColoring(graph, m, color);
+    bool solved = graphColoring(graph, m, color, algorithm == 2);
     
     auto end = high_resolution_clock::now();
     stats.executionTime = duration_cast<microseconds>(end - start).count();
@@ -333,7 +446,7 @@ int main() {
         cout << "Try using at least " << chromaticNumber << " colors." << endl;
     }
     
-    printStats();
+    printStats(algorithm == 1 ? "Basic" : "Optimized");
     
     return 0;
 }
