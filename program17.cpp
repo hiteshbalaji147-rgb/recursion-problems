@@ -80,6 +80,46 @@ bool isSafe(int v, bool graph[MAX_V][MAX_V], int path[], int pos) {
     return true;
 }
 
+// Get degree of a vertex
+int getDegree(bool graph[MAX_V][MAX_V], int v) {
+    int degree = 0;
+    for (int i = 0; i < numVertices; i++) {
+        if (graph[v][i]) {
+            degree++;
+        }
+    }
+    return degree;
+}
+
+// Check Dirac's theorem (sufficient condition for Hamiltonian cycle)
+bool checkDiracsTheorem(bool graph[MAX_V][MAX_V]) {
+    if (numVertices < 3) return false;
+    
+    for (int i = 0; i < numVertices; i++) {
+        if (getDegree(graph, i) < numVertices / 2) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Check Ore's theorem (sufficient condition for Hamiltonian cycle)
+bool checkOresTheorem(bool graph[MAX_V][MAX_V]) {
+    if (numVertices < 3) return false;
+    
+    for (int i = 0; i < numVertices; i++) {
+        for (int j = i + 1; j < numVertices; j++) {
+            // For non-adjacent vertices
+            if (!graph[i][j]) {
+                if (getDegree(graph, i) + getDegree(graph, j) < numVertices) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
 // Recursive function to find Hamiltonian path
 bool hamiltonianPathUtil(bool graph[MAX_V][MAX_V], int path[], int pos) {
     stats.recursionCalls++;
@@ -391,18 +431,107 @@ void printStats(string type = "") {
     cout << "========================================" << endl;
 }
 
+// Print complexity analysis
+void printComplexityAnalysis() {
+    cout << "\n========================================" << endl;
+    cout << "      Complexity Analysis              " << endl;
+    cout << "========================================" << endl;
+    cout << "\n1. Hamiltonian Path/Cycle Problem:" << endl;
+    cout << "   Classification: NP-complete" << endl;
+    cout << "   Time: O(V!) worst case" << endl;
+    cout << "   Space: O(V) for recursion stack" << endl;
+    
+    cout << "\n2. Backtracking Approach:" << endl;
+    cout << "   Best case: O(V) if path found quickly" << endl;
+    cout << "   Average case: O(V * V!)" << endl;
+    cout << "   Worst case: O(V!) tries all permutations" << endl;
+    
+    cout << "\n3. Sufficient Conditions:" << endl;
+    cout << "   Dirac's Theorem: deg(v) >= V/2 for all v" << endl;
+    cout << "   Ore's Theorem: deg(u) + deg(v) >= V" << endl;
+    cout << "   (for non-adjacent vertices u, v)" << endl;
+    
+    cout << "\nNote: V = number of vertices" << endl;
+    cout << "========================================" << endl;
+}
+
+// Print applications
+void printApplications() {
+    cout << "\n========================================" << endl;
+    cout << "      Real-World Applications          " << endl;
+    cout << "========================================" << endl;
+    cout << "\n1. Traveling Salesman Problem (TSP)" << endl;
+    cout << "   - Route optimization" << endl;
+    cout << "   - Delivery planning" << endl;
+    cout << "   - Circuit board drilling" << endl;
+    
+    cout << "\n2. Network Design" << endl;
+    cout << "   - Network topology design" << endl;
+    cout << "   - Optimal routing paths" << endl;
+    
+    cout << "\n3. DNA Sequencing" << endl;
+    cout << "   - Genome assembly" << endl;
+    cout << "   - Fragment ordering" << endl;
+    
+    cout << "\n4. Game Theory" << endl;
+    cout << "   - Knight's tour problem" << endl;
+    cout << "   - Puzzle solving" << endl;
+    
+    cout << "\n5. Manufacturing" << endl;
+    cout << "   - Assembly line optimization" << endl;
+    cout << "   - Machine scheduling" << endl;
+    
+    cout << "\n6. Computer Graphics" << endl;
+    cout << "   - Polygon triangulation" << endl;
+    cout << "   - Path rendering" << endl;
+    cout << "========================================" << endl;
+}
+
 // Count degree of each vertex
 void printDegrees(bool graph[MAX_V][MAX_V]) {
     cout << "\nVertex Degrees:" << endl;
+    int minDegree = numVertices;
     for (int i = 0; i < numVertices; i++) {
-        int degree = 0;
-        for (int j = 0; j < numVertices; j++) {
-            if (graph[i][j]) {
-                degree++;
-            }
-        }
+        int degree = getDegree(graph, i);
         cout << "Vertex " << i << ": degree " << degree << endl;
+        minDegree = min(minDegree, degree);
     }
+    cout << "Minimum degree: " << minDegree << endl;
+}
+
+// Check theorems
+void checkTheorems(bool graph[MAX_V][MAX_V]) {
+    cout << "\n========================================" << endl;
+    cout << "      Theorem Checks                   " << endl;
+    cout << "========================================" << endl;
+    
+    bool dirac = checkDiracsTheorem(graph);
+    bool ore = checkOresTheorem(graph);
+    
+    cout << "\nDirac's Theorem (deg(v) >= V/2): ";
+    if (dirac) {
+        cout << "✓ SATISFIED" << endl;
+        cout << "  → Hamiltonian cycle GUARANTEED to exist!" << endl;
+    } else {
+        cout << "✗ NOT satisfied" << endl;
+        cout << "  → Cannot guarantee Hamiltonian cycle" << endl;
+    }
+    
+    cout << "\nOre's Theorem (deg(u)+deg(v) >= V): ";
+    if (ore) {
+        cout << "✓ SATISFIED" << endl;
+        cout << "  → Hamiltonian cycle GUARANTEED to exist!" << endl;
+    } else {
+        cout << "✗ NOT satisfied" << endl;
+        cout << "  → Cannot guarantee Hamiltonian cycle" << endl;
+    }
+    
+    if (!dirac && !ore) {
+        cout << "\nNote: Cycle may still exist even if theorems" << endl;
+        cout << "      are not satisfied. Need to search." << endl;
+    }
+    
+    cout << "========================================" << endl;
 }
 
 // Input custom graph
@@ -536,6 +665,7 @@ int main() {
     printGraph(graph);
     printEdges(graph);
     printDegrees(graph);
+    checkTheorems(graph);
     
     int mode;
     cout << "\nSelect mode:" << endl;
@@ -660,6 +790,9 @@ int main() {
         
         printStats("All Cycles");
     }
+    
+    printComplexityAnalysis();
+    printApplications();
     
     return 0;
 }
