@@ -1,10 +1,65 @@
 #include <iostream>
 #include <vector>
+#include <chrono>
+#include <unistd.h>
 using namespace std;
+using namespace chrono;
 
 #define MAX_V 10  // Maximum number of vertices
 
 int numVertices;  // Actual number of vertices
+
+// Statistics structure
+struct Stats {
+    int recursionCalls = 0;
+    int backtrackCount = 0;
+    int pathsExplored = 0;
+    long long executionTime = 0;
+};
+
+Stats stats;
+bool stepByStep = false;
+
+// Visualize current path state
+void visualizePathState(int path[], int pos) {
+    cout << "\n--- Current Path State ---" << endl;
+    cout << "Position: " << pos << "/" << numVertices << endl;
+    cout << "Path so far: ";
+    
+    for (int i = 0; i < pos; i++) {
+        cout << path[i];
+        if (i < pos - 1) cout << " -> ";
+    }
+    
+    if (pos < numVertices) {
+        cout << " -> ?";
+    }
+    
+    cout << endl;
+    
+    cout << "Visited vertices: ";
+    for (int i = 0; i < pos; i++) {
+        cout << path[i] << " ";
+    }
+    cout << endl;
+    
+    cout << "Remaining vertices: ";
+    for (int v = 0; v < numVertices; v++) {
+        bool visited = false;
+        for (int i = 0; i < pos; i++) {
+            if (path[i] == v) {
+                visited = true;
+                break;
+            }
+        }
+        if (!visited) {
+            cout << v << " ";
+        }
+    }
+    cout << endl;
+    
+    usleep(500000);  // 0.5 second delay
+}
 
 // Function to check if vertex v can be added to the path
 bool isSafe(int v, bool graph[MAX_V][MAX_V], int path[], int pos) {
@@ -25,14 +80,32 @@ bool isSafe(int v, bool graph[MAX_V][MAX_V], int path[], int pos) {
 
 // Recursive function to find Hamiltonian path
 bool hamiltonianPathUtil(bool graph[MAX_V][MAX_V], int path[], int pos) {
+    stats.recursionCalls++;
+    stats.pathsExplored++;
+    
+    if (stepByStep) {
+        visualizePathState(path, pos);
+    }
+    
     // Base case: all vertices are included in the path
     if (pos == numVertices) {
+        if (stepByStep) {
+            cout << "\n✓ Complete path found!" << endl;
+        }
         return true;
     }
     
     // Try different vertices as the next candidate in path
     for (int v = 0; v < numVertices; v++) {
+        if (stepByStep) {
+            cout << "Trying vertex " << v << "..." << endl;
+        }
+        
         if (isSafe(v, graph, path, pos)) {
+            if (stepByStep) {
+                cout << "✓ Vertex " << v << " is safe, adding to path" << endl;
+            }
+            
             path[pos] = v;
             
             // Recursively construct rest of the path
@@ -41,7 +114,16 @@ bool hamiltonianPathUtil(bool graph[MAX_V][MAX_V], int path[], int pos) {
             }
             
             // Backtrack if adding vertex v doesn't lead to solution
+            if (stepByStep) {
+                cout << "✗ Backtracking from vertex " << v << endl;
+            }
+            
             path[pos] = -1;
+            stats.backtrackCount++;
+        } else {
+            if (stepByStep) {
+                cout << "✗ Vertex " << v << " is not safe" << endl;
+            }
         }
     }
     
@@ -50,18 +132,40 @@ bool hamiltonianPathUtil(bool graph[MAX_V][MAX_V], int path[], int pos) {
 
 // Recursive function to find Hamiltonian cycle
 bool hamiltonianCycleUtil(bool graph[MAX_V][MAX_V], int path[], int pos) {
+    stats.recursionCalls++;
+    stats.pathsExplored++;
+    
+    if (stepByStep) {
+        visualizePathState(path, pos);
+    }
+    
     // Base case: all vertices are included in the path
     if (pos == numVertices) {
         // Check if there is an edge from the last vertex to the first vertex
         if (graph[path[pos - 1]][path[0]] == 1) {
+            if (stepByStep) {
+                cout << "\n✓ Complete cycle found! Edge exists from " 
+                     << path[pos - 1] << " back to " << path[0] << endl;
+            }
             return true;
+        }
+        if (stepByStep) {
+            cout << "\n✗ No edge from " << path[pos - 1] << " back to " << path[0] << endl;
         }
         return false;
     }
     
     // Try different vertices as the next candidate in path
     for (int v = 1; v < numVertices; v++) {  // Start from 1 since 0 is already in path
+        if (stepByStep) {
+            cout << "Trying vertex " << v << "..." << endl;
+        }
+        
         if (isSafe(v, graph, path, pos)) {
+            if (stepByStep) {
+                cout << "✓ Vertex " << v << " is safe, adding to path" << endl;
+            }
+            
             path[pos] = v;
             
             // Recursively construct rest of the path
@@ -70,7 +174,16 @@ bool hamiltonianCycleUtil(bool graph[MAX_V][MAX_V], int path[], int pos) {
             }
             
             // Backtrack if adding vertex v doesn't lead to solution
+            if (stepByStep) {
+                cout << "✗ Backtracking from vertex " << v << endl;
+            }
+            
             path[pos] = -1;
+            stats.backtrackCount++;
+        } else {
+            if (stepByStep) {
+                cout << "✗ Vertex " << v << " is not safe" << endl;
+            }
         }
     }
     
@@ -155,6 +268,34 @@ void printPath(int path[], bool isCycle = false) {
     cout << endl;
 }
 
+// Print statistics
+void printStats(string type = "") {
+    cout << "\n========================================" << endl;
+    cout << "           Statistics";
+    if (!type.empty()) cout << " (" << type << ")";
+    cout << endl;
+    cout << "========================================" << endl;
+    cout << "Recursion calls: " << stats.recursionCalls << endl;
+    cout << "Paths explored: " << stats.pathsExplored << endl;
+    cout << "Backtrack operations: " << stats.backtrackCount << endl;
+    cout << "Execution time: " << stats.executionTime << " μs" << endl;
+    cout << "========================================" << endl;
+}
+
+// Count degree of each vertex
+void printDegrees(bool graph[MAX_V][MAX_V]) {
+    cout << "\nVertex Degrees:" << endl;
+    for (int i = 0; i < numVertices; i++) {
+        int degree = 0;
+        for (int j = 0; j < numVertices; j++) {
+            if (graph[i][j]) {
+                degree++;
+            }
+        }
+        cout << "Vertex " << i << ": degree " << degree << endl;
+    }
+}
+
 int main() {
     cout << "========================================" << endl;
     cout << "  Hamiltonian Path & Cycle Problem     " << endl;
@@ -231,6 +372,7 @@ int main() {
     
     printGraph(graph);
     printEdges(graph);
+    printDegrees(graph);
     
     int mode;
     cout << "\nSelect mode:" << endl;
@@ -240,6 +382,15 @@ int main() {
     cout << "Enter choice (1-3): ";
     cin >> mode;
     
+    int vizMode;
+    cout << "\nSelect visualization mode:" << endl;
+    cout << "1. Instant solution" << endl;
+    cout << "2. Step-by-step visualization" << endl;
+    cout << "Enter choice (1-2): ";
+    cin >> vizMode;
+    
+    stepByStep = (vizMode == 2);
+    
     int path[MAX_V];
     
     if (mode == 1 || mode == 3) {
@@ -247,12 +398,22 @@ int main() {
         cout << "    Searching for Hamiltonian Path     " << endl;
         cout << "========================================" << endl;
         
-        if (hamiltonianPath(graph, path)) {
-            cout << "✓ Hamiltonian path found:" << endl;
+        stats = Stats();
+        auto start = high_resolution_clock::now();
+        
+        bool found = hamiltonianPath(graph, path);
+        
+        auto end = high_resolution_clock::now();
+        stats.executionTime = duration_cast<microseconds>(end - start).count();
+        
+        if (found) {
+            cout << "\n✓ Hamiltonian path found:" << endl;
             printPath(path, false);
         } else {
-            cout << "✗ No Hamiltonian path exists" << endl;
+            cout << "\n✗ No Hamiltonian path exists" << endl;
         }
+        
+        printStats("Path");
     }
     
     if (mode == 2 || mode == 3) {
@@ -260,12 +421,22 @@ int main() {
         cout << "    Searching for Hamiltonian Cycle    " << endl;
         cout << "========================================" << endl;
         
-        if (hamiltonianCycle(graph, path)) {
-            cout << "✓ Hamiltonian cycle found:" << endl;
+        stats = Stats();
+        auto start = high_resolution_clock::now();
+        
+        bool found = hamiltonianCycle(graph, path);
+        
+        auto end = high_resolution_clock::now();
+        stats.executionTime = duration_cast<microseconds>(end - start).count();
+        
+        if (found) {
+            cout << "\n✓ Hamiltonian cycle found:" << endl;
             printPath(path, true);
         } else {
-            cout << "✗ No Hamiltonian cycle exists" << endl;
+            cout << "\n✗ No Hamiltonian cycle exists" << endl;
         }
+        
+        printStats("Cycle");
     }
     
     return 0;
