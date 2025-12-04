@@ -239,6 +239,53 @@ int getDegree(bool graph[MAX_V][MAX_V], int v) {
     return degree;
 }
 
+// Check if graph is bipartite (2-colorable)
+bool isBipartite(bool graph[MAX_V][MAX_V]) {
+    int color[MAX_V];
+    for (int i = 0; i < numVertices; i++) {
+        color[i] = -1;
+    }
+    
+    // BFS-based coloring
+    for (int start = 0; start < numVertices; start++) {
+        if (color[start] == -1) {
+            color[start] = 0;
+            vector<int> queue;
+            queue.push_back(start);
+            
+            while (!queue.empty()) {
+                int u = queue[0];
+                queue.erase(queue.begin());
+                
+                for (int v = 0; v < numVertices; v++) {
+                    if (graph[u][v]) {
+                        if (color[v] == -1) {
+                            color[v] = 1 - color[u];
+                            queue.push_back(v);
+                        } else if (color[v] == color[u]) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return true;
+}
+
+// Check if graph is complete
+bool isComplete(bool graph[MAX_V][MAX_V]) {
+    for (int i = 0; i < numVertices; i++) {
+        for (int j = 0; j < numVertices; j++) {
+            if (i != j && !graph[i][j]) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 // Print the graph
 void printGraph(bool graph[MAX_V][MAX_V]) {
     cout << "\nGraph Adjacency Matrix:" << endl;
@@ -282,6 +329,45 @@ void printDegrees(bool graph[MAX_V][MAX_V]) {
     }
     cout << "Maximum degree (Δ): " << maxDegree << endl;
     cout << "Upper bound (Brooks): " << maxDegree << " colors" << endl;
+}
+
+// Check graph properties
+void checkGraphProperties(bool graph[MAX_V][MAX_V]) {
+    cout << "\n========================================" << endl;
+    cout << "      Graph Properties                 " << endl;
+    cout << "========================================" << endl;
+    
+    bool bipartite = isBipartite(graph);
+    bool complete = isComplete(graph);
+    
+    cout << "\nBipartite: ";
+    if (bipartite) {
+        cout << "✓ YES (χ = 2)" << endl;
+        cout << "  → Graph can be 2-colored" << endl;
+    } else {
+        cout << "✗ NO (χ ≥ 3)" << endl;
+        cout << "  → Graph requires at least 3 colors" << endl;
+    }
+    
+    cout << "\nComplete graph: ";
+    if (complete) {
+        cout << "✓ YES (K" << numVertices << ")" << endl;
+        cout << "  → Chromatic number χ = " << numVertices << endl;
+    } else {
+        cout << "✗ NO" << endl;
+    }
+    
+    int maxDegree = 0;
+    for (int i = 0; i < numVertices; i++) {
+        maxDegree = max(maxDegree, getDegree(graph, i));
+    }
+    
+    cout << "\nBounds on chromatic number:" << endl;
+    cout << "Lower bound: " << (bipartite ? 2 : 3) << endl;
+    cout << "Upper bound (Brooks): " << maxDegree << endl;
+    cout << "Upper bound (greedy): " << (maxDegree + 1) << endl;
+    
+    cout << "========================================" << endl;
 }
 
 // Print coloring solution
@@ -344,6 +430,74 @@ void printStats(string type = "") {
     cout << "Color assignments: " << stats.colorAssignments << endl;
     cout << "Backtrack operations: " << stats.backtrackCount << endl;
     cout << "Execution time: " << stats.executionTime << " μs" << endl;
+    cout << "========================================" << endl;
+}
+
+// Print complexity analysis
+void printComplexityAnalysis() {
+    cout << "\n========================================" << endl;
+    cout << "      Complexity Analysis              " << endl;
+    cout << "========================================" << endl;
+    cout << "\n1. Graph Coloring Problem:" << endl;
+    cout << "   Classification: NP-complete" << endl;
+    cout << "   Decision version: NP-complete" << endl;
+    cout << "   Optimization version: NP-hard" << endl;
+    
+    cout << "\n2. Backtracking Approach:" << endl;
+    cout << "   Time: O(m^V) where m = colors, V = vertices" << endl;
+    cout << "   Space: O(V) for recursion stack" << endl;
+    cout << "   Best case: O(V) if solution found quickly" << endl;
+    cout << "   Worst case: O(m^V) tries all combinations" << endl;
+    
+    cout << "\n3. Greedy Coloring:" << endl;
+    cout << "   Time: O(V^2) for adjacency matrix" << endl;
+    cout << "   Space: O(V) for color array" << endl;
+    cout << "   Approximation: Uses at most Δ+1 colors" << endl;
+    cout << "   (where Δ = maximum degree)" << endl;
+    
+    cout << "\n4. Chromatic Number Bounds:" << endl;
+    cout << "   Lower: ω(G) (clique number)" << endl;
+    cout << "   Upper: Δ(G) (Brooks' theorem)" << endl;
+    cout << "   Upper: Δ(G)+1 (greedy bound)" << endl;
+    
+    cout << "\nNote: V = vertices, m = colors, Δ = max degree" << endl;
+    cout << "========================================" << endl;
+}
+
+// Print applications
+void printApplications() {
+    cout << "\n========================================" << endl;
+    cout << "      Real-World Applications          " << endl;
+    cout << "========================================" << endl;
+    cout << "\n1. Scheduling Problems" << endl;
+    cout << "   - Exam timetabling" << endl;
+    cout << "   - Meeting room allocation" << endl;
+    cout << "   - Task scheduling" << endl;
+    
+    cout << "\n2. Register Allocation" << endl;
+    cout << "   - Compiler optimization" << endl;
+    cout << "   - CPU register assignment" << endl;
+    
+    cout << "\n3. Frequency Assignment" << endl;
+    cout << "   - Mobile network channels" << endl;
+    cout << "   - Radio frequency allocation" << endl;
+    cout << "   - WiFi channel assignment" << endl;
+    
+    cout << "\n4. Map Coloring" << endl;
+    cout << "   - Geographic maps (4-color theorem)" << endl;
+    cout << "   - Political boundaries" << endl;
+    
+    cout << "\n5. Sudoku Solving" << endl;
+    cout << "   - Constraint satisfaction" << endl;
+    cout << "   - Puzzle generation" << endl;
+    
+    cout << "\n6. Pattern Matching" << endl;
+    cout << "   - Image segmentation" << endl;
+    cout << "   - Data clustering" << endl;
+    
+    cout << "\n7. Bioinformatics" << endl;
+    cout << "   - Protein structure analysis" << endl;
+    cout << "   - DNA sequencing conflicts" << endl;
     cout << "========================================" << endl;
 }
 
@@ -499,6 +653,7 @@ int main() {
     printGraph(graph);
     printEdges(graph);
     printDegrees(graph);
+    checkGraphProperties(graph);
     
     int mode;
     cout << "\nSelect mode:" << endl;
@@ -647,6 +802,9 @@ int main() {
         cout << "Greedy efficiency: " << (100.0 * chromaticNum / greedyColors) << "%" << endl;
         cout << "Time speedup (greedy): " << (optimalTime / (double)greedyTime) << "x faster" << endl;
     }
+    
+    printComplexityAnalysis();
+    printApplications();
     
     return 0;
 }
