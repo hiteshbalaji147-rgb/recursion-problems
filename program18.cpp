@@ -2,6 +2,7 @@
 #include <vector>
 #include <chrono>
 #include <unistd.h>
+#include <algorithm>
 using namespace std;
 using namespace chrono;
 
@@ -180,6 +181,53 @@ int findChromaticNumber(bool graph[MAX_V][MAX_V]) {
     return numVertices;  // Worst case
 }
 
+// Greedy coloring algorithm
+int greedyColoring(bool graph[MAX_V][MAX_V], int color[]) {
+    // Initialize all colors as 0 (uncolored)
+    for (int i = 0; i < numVertices; i++) {
+        color[i] = 0;
+    }
+    
+    // Color first vertex with color 1
+    color[0] = 1;
+    
+    // Array to track available colors
+    bool available[MAX_V];
+    
+    // Color remaining vertices
+    for (int v = 1; v < numVertices; v++) {
+        // Initialize all colors as available
+        for (int c = 0; c < numVertices; c++) {
+            available[c] = true;
+        }
+        
+        // Mark colors of adjacent vertices as unavailable
+        for (int i = 0; i < numVertices; i++) {
+            if (graph[v][i] && color[i] != 0) {
+                available[color[i] - 1] = false;
+            }
+        }
+        
+        // Find first available color
+        int c;
+        for (c = 0; c < numVertices; c++) {
+            if (available[c]) {
+                break;
+            }
+        }
+        
+        color[v] = c + 1;
+    }
+    
+    // Find maximum color used
+    int maxColor = 0;
+    for (int i = 0; i < numVertices; i++) {
+        maxColor = max(maxColor, color[i]);
+    }
+    
+    return maxColor;
+}
+
 // Get degree of a vertex
 int getDegree(bool graph[MAX_V][MAX_V], int v) {
     int degree = 0;
@@ -299,6 +347,43 @@ void printStats(string type = "") {
     cout << "========================================" << endl;
 }
 
+// Input custom graph
+void inputCustomGraph(bool graph[MAX_V][MAX_V]) {
+    cout << "\nEnter number of vertices (max " << MAX_V << "): ";
+    cin >> numVertices;
+    
+    if (numVertices > MAX_V) {
+        cout << "Too many vertices! Using maximum: " << MAX_V << endl;
+        numVertices = MAX_V;
+    }
+    
+    // Initialize graph
+    for (int i = 0; i < numVertices; i++) {
+        for (int j = 0; j < numVertices; j++) {
+            graph[i][j] = false;
+        }
+    }
+    
+    cout << "\nEnter number of edges: ";
+    int edges;
+    cin >> edges;
+    
+    cout << "\nEnter edges (format: vertex1 vertex2):" << endl;
+    for (int i = 0; i < edges; i++) {
+        int u, v;
+        cout << "Edge " << (i + 1) << ": ";
+        cin >> u >> v;
+        
+        if (u >= 0 && u < numVertices && v >= 0 && v < numVertices && u != v) {
+            graph[u][v] = true;
+            graph[v][u] = true;
+        } else {
+            cout << "Invalid edge! Skipping..." << endl;
+            i--;
+        }
+    }
+}
+
 int main() {
     cout << "========================================" << endl;
     cout << "     Graph Coloring Problem            " << endl;
@@ -338,56 +423,73 @@ int main() {
         {1, 0, 0, 1, 0}
     };
     
-    int choice;
-    cout << "\nSelect test graph:" << endl;
-    cout << "1. Graph 1 (4 vertices)" << endl;
-    cout << "2. Bipartite graph (4 vertices)" << endl;
-    cout << "3. Complete graph K5 (5 vertices)" << endl;
-    cout << "4. Cycle graph C5 (5 vertices)" << endl;
-    cout << "Enter choice (1-4): ";
-    cin >> choice;
+    int inputMode;
+    cout << "\nSelect input mode:" << endl;
+    cout << "1. Use preset graph" << endl;
+    cout << "2. Input custom graph" << endl;
+    cout << "Enter choice (1-2): ";
+    cin >> inputMode;
     
     bool graph[MAX_V][MAX_V];
     
-    if (choice == 1) {
-        numVertices = 4;
-        for (int i = 0; i < numVertices; i++) {
-            for (int j = 0; j < numVertices; j++) {
-                graph[i][j] = graph1[i][j];
+    if (inputMode == 1) {
+        int choice;
+        cout << "\nSelect test graph:" << endl;
+        cout << "1. Graph 1 (4 vertices)" << endl;
+        cout << "2. Bipartite graph (4 vertices)" << endl;
+        cout << "3. Complete graph K5 (5 vertices)" << endl;
+        cout << "4. Cycle graph C5 (5 vertices)" << endl;
+        cout << "Enter choice (1-4): ";
+        cin >> choice;
+        
+        if (choice == 1) {
+            numVertices = 4;
+            for (int i = 0; i < numVertices; i++) {
+                for (int j = 0; j < numVertices; j++) {
+                    graph[i][j] = graph1[i][j];
+                }
             }
-        }
-        cout << "\n========================================" << endl;
-        cout << "    Test Graph 1                       " << endl;
-        cout << "========================================" << endl;
-    } else if (choice == 2) {
-        numVertices = 4;
-        for (int i = 0; i < numVertices; i++) {
-            for (int j = 0; j < numVertices; j++) {
-                graph[i][j] = graph2[i][j];
+            cout << "\n========================================" << endl;
+            cout << "    Test Graph 1                       " << endl;
+            cout << "========================================" << endl;
+        } else if (choice == 2) {
+            numVertices = 4;
+            for (int i = 0; i < numVertices; i++) {
+                for (int j = 0; j < numVertices; j++) {
+                    graph[i][j] = graph2[i][j];
+                }
             }
-        }
-        cout << "\n========================================" << endl;
-        cout << "    Bipartite Graph                    " << endl;
-        cout << "========================================" << endl;
-    } else if (choice == 3) {
-        numVertices = 5;
-        for (int i = 0; i < numVertices; i++) {
-            for (int j = 0; j < numVertices; j++) {
-                graph[i][j] = graph3[i][j];
+            cout << "\n========================================" << endl;
+            cout << "    Bipartite Graph                    " << endl;
+            cout << "========================================" << endl;
+        } else if (choice == 3) {
+            numVertices = 5;
+            for (int i = 0; i < numVertices; i++) {
+                for (int j = 0; j < numVertices; j++) {
+                    graph[i][j] = graph3[i][j];
+                }
             }
-        }
-        cout << "\n========================================" << endl;
-        cout << "    Complete Graph K5                  " << endl;
-        cout << "========================================" << endl;
-    } else if (choice == 4) {
-        numVertices = 5;
-        for (int i = 0; i < numVertices; i++) {
-            for (int j = 0; j < numVertices; j++) {
-                graph[i][j] = graph4[i][j];
+            cout << "\n========================================" << endl;
+            cout << "    Complete Graph K5                  " << endl;
+            cout << "========================================" << endl;
+        } else if (choice == 4) {
+            numVertices = 5;
+            for (int i = 0; i < numVertices; i++) {
+                for (int j = 0; j < numVertices; j++) {
+                    graph[i][j] = graph4[i][j];
+                }
             }
+            cout << "\n========================================" << endl;
+            cout << "    Cycle Graph C5                     " << endl;
+            cout << "========================================" << endl;
+        } else {
+            cout << "Invalid choice!" << endl;
+            return 1;
         }
+    } else if (inputMode == 2) {
+        inputCustomGraph(graph);
         cout << "\n========================================" << endl;
-        cout << "    Cycle Graph C5                     " << endl;
+        cout << "    Custom Graph                       " << endl;
         cout << "========================================" << endl;
     } else {
         cout << "Invalid choice!" << endl;
@@ -403,7 +505,8 @@ int main() {
     cout << "1. Find chromatic number (minimum colors)" << endl;
     cout << "2. Try with specific number of colors" << endl;
     cout << "3. Find all coloring solutions" << endl;
-    cout << "Enter choice (1-3): ";
+    cout << "4. Compare greedy vs optimal coloring" << endl;
+    cout << "Enter choice (1-4): ";
     cin >> mode;
     
     int color[MAX_V];
@@ -502,6 +605,47 @@ int main() {
         }
         
         printStats("All Solutions");
+        
+    } else if (mode == 4) {
+        cout << "\n========================================" << endl;
+        cout << "  Greedy vs Optimal Comparison         " << endl;
+        cout << "========================================" << endl;
+        
+        // Greedy coloring
+        int greedyColor[MAX_V];
+        auto start = high_resolution_clock::now();
+        int greedyColors = greedyColoring(graph, greedyColor);
+        auto end = high_resolution_clock::now();
+        long long greedyTime = duration_cast<microseconds>(end - start).count();
+        
+        cout << "\n--- Greedy Coloring ---" << endl;
+        cout << "Colors used: " << greedyColors << endl;
+        cout << "Time: " << greedyTime << " μs" << endl;
+        printColoring(greedyColor);
+        visualizeColoring(greedyColor, greedyColors);
+        
+        // Optimal coloring
+        start = high_resolution_clock::now();
+        int chromaticNum = findChromaticNumber(graph);
+        end = high_resolution_clock::now();
+        long long optimalTime = duration_cast<microseconds>(end - start).count();
+        
+        stats = Stats();
+        graphColoring(graph, chromaticNum, color);
+        
+        cout << "\n--- Optimal Coloring ---" << endl;
+        cout << "Colors used (χ): " << chromaticNum << endl;
+        cout << "Time: " << optimalTime << " μs" << endl;
+        printColoring(color);
+        visualizeColoring(color, chromaticNum);
+        
+        // Comparison
+        cout << "\n--- Comparison ---" << endl;
+        cout << "Greedy colors: " << greedyColors << endl;
+        cout << "Optimal colors: " << chromaticNum << endl;
+        cout << "Difference: " << (greedyColors - chromaticNum) << endl;
+        cout << "Greedy efficiency: " << (100.0 * chromaticNum / greedyColors) << "%" << endl;
+        cout << "Time speedup (greedy): " << (optimalTime / (double)greedyTime) << "x faster" << endl;
     }
     
     return 0;
