@@ -542,6 +542,87 @@ void printStats(string type = "") {
     cout << "========================================" << endl;
 }
 
+// Print complexity analysis
+void printComplexityAnalysis() {
+    cout << "\n========================================" << endl;
+    cout << "      Complexity Analysis              " << endl;
+    cout << "========================================" << endl;
+    cout << "\n1. Hamiltonian Path/Cycle Problem:" << endl;
+    cout << "   Classification: NP-complete" << endl;
+    cout << "   Decision version: NP-complete" << endl;
+    cout << "   Optimization version: NP-hard" << endl;
+    
+    cout << "\n2. Backtracking Approach:" << endl;
+    cout << "   Time: O(V!) worst case" << endl;
+    cout << "   Space: O(V) for recursion stack + path array" << endl;
+    cout << "   Best case: O(V) if path found quickly" << endl;
+    cout << "   Worst case: O(V!) tries all permutations" << endl;
+    
+    cout << "\n3. Hamiltonian Path vs Cycle:" << endl;
+    cout << "   Path: Try V starting vertices" << endl;
+    cout << "   Cycle: Fix starting vertex (avoid duplicates)" << endl;
+    cout << "   Cycle requires edge back to start" << endl;
+    
+    cout << "\n4. Sufficient Conditions:" << endl;
+    cout << "   Dirac's Theorem: deg(v) ≥ n/2 → cycle exists" << endl;
+    cout << "   Ore's Theorem: deg(u)+deg(v) ≥ n → cycle exists" << endl;
+    cout << "   (for non-adjacent vertices u,v)" << endl;
+    
+    cout << "\n5. Necessary Conditions:" << endl;
+    cout << "   Graph must be connected" << endl;
+    cout << "   For cycle: n ≥ 3 vertices required" << endl;
+    
+    cout << "\nNote: V = number of vertices" << endl;
+    cout << "========================================" << endl;
+}
+
+// Print applications
+void printApplications() {
+    cout << "\n========================================" << endl;
+    cout << "      Real-World Applications          " << endl;
+    cout << "========================================" << endl;
+    cout << "\n1. Traveling Salesman Problem (TSP)" << endl;
+    cout << "   - Route optimization for delivery" << endl;
+    cout << "   - Logistics and supply chain" << endl;
+    cout << "   - Circuit board drilling" << endl;
+    
+    cout << "\n2. DNA Sequencing" << endl;
+    cout << "   - Genome assembly" << endl;
+    cout << "   - Fragment reconstruction" << endl;
+    cout << "   - Sequence alignment" << endl;
+    
+    cout << "\n3. Network Routing" << endl;
+    cout << "   - Packet routing in networks" << endl;
+    cout << "   - Network topology design" << endl;
+    cout << "   - Optimal path finding" << endl;
+    
+    cout << "\n4. Game Theory" << endl;
+    cout << "   - Knight's tour problem (chess)" << endl;
+    cout << "   - Puzzle solving" << endl;
+    cout << "   - Game state exploration" << endl;
+    
+    cout << "\n5. Manufacturing" << endl;
+    cout << "   - Assembly line optimization" << endl;
+    cout << "   - Robot arm path planning" << endl;
+    cout << "   - CNC machine tool paths" << endl;
+    
+    cout << "\n6. Computer Graphics" << endl;
+    cout << "   - Polygon triangulation" << endl;
+    cout << "   - Mesh generation" << endl;
+    cout << "   - Path tracing" << endl;
+    
+    cout << "\n7. Scheduling Problems" << endl;
+    cout << "   - Task sequencing" << endl;
+    cout << "   - Job shop scheduling" << endl;
+    cout << "   - Resource allocation" << endl;
+    
+    cout << "\n8. Bioinformatics" << endl;
+    cout << "   - Protein folding paths" << endl;
+    cout << "   - Metabolic pathway analysis" << endl;
+    cout << "   - Gene regulatory networks" << endl;
+    cout << "========================================" << endl;
+}
+
 // Input custom graph
 void inputCustomGraph(bool graph[MAX_V][MAX_V]) {
     cout << "\nEnter number of vertices (max " << MAX_V << "): ";
@@ -812,6 +893,9 @@ int main() {
         
         printStats("All Cycles");
     }
+    
+    printComplexityAnalysis();
+    printApplications();
     
     return 0;
 }
