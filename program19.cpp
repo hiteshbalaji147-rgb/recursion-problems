@@ -323,6 +323,130 @@ void findAllCycles(bool graph[MAX_V][MAX_V]) {
     findAllCyclesUtil(graph, path, 1);
 }
 
+// Get degree of a vertex
+int getDegree(bool graph[MAX_V][MAX_V], int v) {
+    int degree = 0;
+    for (int i = 0; i < numVertices; i++) {
+        if (graph[v][i]) {
+            degree++;
+        }
+    }
+    return degree;
+}
+
+// Check if graph is connected
+bool isConnected(bool graph[MAX_V][MAX_V]) {
+    bool visited[MAX_V] = {false};
+    
+    // BFS from vertex 0
+    vector<int> queue;
+    queue.push_back(0);
+    visited[0] = true;
+    int visitedCount = 1;
+    
+    while (!queue.empty()) {
+        int u = queue[0];
+        queue.erase(queue.begin());
+        
+        for (int v = 0; v < numVertices; v++) {
+            if (graph[u][v] && !visited[v]) {
+                visited[v] = true;
+                visitedCount++;
+                queue.push_back(v);
+            }
+        }
+    }
+    
+    return visitedCount == numVertices;
+}
+
+// Check Dirac's theorem (sufficient condition for Hamiltonian cycle)
+bool checkDiracTheorem(bool graph[MAX_V][MAX_V]) {
+    if (numVertices < 3) {
+        return false;
+    }
+    
+    for (int i = 0; i < numVertices; i++) {
+        if (getDegree(graph, i) < numVertices / 2) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// Check Ore's theorem (sufficient condition for Hamiltonian cycle)
+bool checkOreTheorem(bool graph[MAX_V][MAX_V]) {
+    if (numVertices < 3) {
+        return false;
+    }
+    
+    for (int i = 0; i < numVertices; i++) {
+        for (int j = i + 1; j < numVertices; j++) {
+            if (!graph[i][j]) {  // Non-adjacent vertices
+                if (getDegree(graph, i) + getDegree(graph, j) < numVertices) {
+                    return false;
+                }
+            }
+        }
+    }
+    
+    return true;
+}
+
+// Check graph properties
+void checkGraphProperties(bool graph[MAX_V][MAX_V]) {
+    cout << "\n========================================" << endl;
+    cout << "      Graph Properties                 " << endl;
+    cout << "========================================" << endl;
+    
+    bool connected = isConnected(graph);
+    bool dirac = checkDiracTheorem(graph);
+    bool ore = checkOreTheorem(graph);
+    
+    cout << "\nConnected: ";
+    if (connected) {
+        cout << "✓ YES" << endl;
+        cout << "  → Graph is connected (necessary for Hamiltonian path/cycle)" << endl;
+    } else {
+        cout << "✗ NO" << endl;
+        cout << "  → Graph is disconnected (no Hamiltonian path/cycle possible)" << endl;
+    }
+    
+    cout << "\nDirac's Theorem (deg(v) ≥ n/2 for all v):" << endl;
+    if (dirac) {
+        cout << "✓ SATISFIED" << endl;
+        cout << "  → Hamiltonian cycle GUARANTEED to exist!" << endl;
+    } else {
+        cout << "✗ NOT SATISFIED" << endl;
+        cout << "  → Hamiltonian cycle may or may not exist" << endl;
+    }
+    
+    cout << "\nOre's Theorem (deg(u) + deg(v) ≥ n for non-adjacent u,v):" << endl;
+    if (ore) {
+        cout << "✓ SATISFIED" << endl;
+        cout << "  → Hamiltonian cycle GUARANTEED to exist!" << endl;
+    } else {
+        cout << "✗ NOT SATISFIED" << endl;
+        cout << "  → Hamiltonian cycle may or may not exist" << endl;
+    }
+    
+    int minDegree = numVertices;
+    int maxDegree = 0;
+    for (int i = 0; i < numVertices; i++) {
+        int deg = getDegree(graph, i);
+        minDegree = min(minDegree, deg);
+        maxDegree = max(maxDegree, deg);
+    }
+    
+    cout << "\nDegree Statistics:" << endl;
+    cout << "Minimum degree: " << minDegree << endl;
+    cout << "Maximum degree: " << maxDegree << endl;
+    cout << "Required for Dirac: " << (numVertices / 2) << endl;
+    
+    cout << "========================================" << endl;
+}
+
 // Print the graph
 void printGraph(bool graph[MAX_V][MAX_V]) {
     cout << "\nGraph Adjacency Matrix:" << endl;
@@ -353,17 +477,6 @@ void printEdges(bool graph[MAX_V][MAX_V]) {
         }
     }
     cout << "Total edges: " << edgeCount << endl;
-}
-
-// Get degree of a vertex
-int getDegree(bool graph[MAX_V][MAX_V], int v) {
-    int degree = 0;
-    for (int i = 0; i < numVertices; i++) {
-        if (graph[v][i]) {
-            degree++;
-        }
-    }
-    return degree;
 }
 
 // Print vertex degrees
@@ -581,6 +694,7 @@ int main() {
     printGraph(graph);
     printEdges(graph);
     printDegrees(graph);
+    checkGraphProperties(graph);
     
     int mode;
     cout << "\nSelect mode:" << endl;
