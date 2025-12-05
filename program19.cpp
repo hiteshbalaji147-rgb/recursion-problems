@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <chrono>
+#include <unistd.h>
 using namespace std;
 using namespace chrono;
 
@@ -19,6 +20,48 @@ struct Stats {
 Stats stats;
 vector<vector<int>> allPaths;
 vector<vector<int>> allCycles;
+bool stepByStep = false;
+
+// Visualize current path state
+void visualizePathState(int path[], int pos, string type = "Path") {
+    cout << "\n--- Current " << type << " State ---" << endl;
+    cout << "Position: " << pos << "/" << numVertices << endl;
+    
+    cout << "\nCurrent " << type << ": ";
+    for (int i = 0; i < pos; i++) {
+        cout << path[i];
+        if (i < pos - 1) {
+            cout << " -> ";
+        }
+    }
+    if (pos > 0) {
+        cout << " -> ?";
+    }
+    cout << endl;
+    
+    cout << "\nVisited vertices: ";
+    for (int i = 0; i < pos; i++) {
+        cout << path[i] << " ";
+    }
+    cout << endl;
+    
+    cout << "Remaining vertices: ";
+    for (int v = 0; v < numVertices; v++) {
+        bool visited = false;
+        for (int i = 0; i < pos; i++) {
+            if (path[i] == v) {
+                visited = true;
+                break;
+            }
+        }
+        if (!visited) {
+            cout << v << " ";
+        }
+    }
+    cout << endl;
+    
+    usleep(500000);  // 0.5 second delay
+}
 
 // Check if vertex v can be added to the Hamiltonian path
 bool isSafe(int v, bool graph[MAX_V][MAX_V], int path[], int pos) {
@@ -42,14 +85,29 @@ bool hamiltonianPathUtil(bool graph[MAX_V][MAX_V], int path[], int pos) {
     stats.recursionCalls++;
     stats.pathsExplored++;
     
+    if (stepByStep) {
+        visualizePathState(path, pos, "Path");
+    }
+    
     // Base case: all vertices are included in the path
     if (pos == numVertices) {
+        if (stepByStep) {
+            cout << "\n✓ Complete Hamiltonian path found!" << endl;
+        }
         return true;
     }
     
     // Try different vertices as next candidate in Hamiltonian path
     for (int v = 0; v < numVertices; v++) {
+        if (stepByStep) {
+            cout << "Trying vertex " << v << " at position " << pos << "..." << endl;
+        }
+        
         if (isSafe(v, graph, path, pos)) {
+            if (stepByStep) {
+                cout << "✓ Vertex " << v << " is safe" << endl;
+            }
+            
             path[pos] = v;
             
             // Recursively construct rest of the path
@@ -58,8 +116,16 @@ bool hamiltonianPathUtil(bool graph[MAX_V][MAX_V], int path[], int pos) {
             }
             
             // Backtrack if adding vertex v doesn't lead to solution
+            if (stepByStep) {
+                cout << "✗ Backtracking from vertex " << v << endl;
+            }
+            
             path[pos] = -1;
             stats.backtrackCount++;
+        } else {
+            if (stepByStep) {
+                cout << "✗ Vertex " << v << " is not safe (not adjacent or already visited)" << endl;
+            }
         }
     }
     
@@ -99,26 +165,53 @@ bool hamiltonianCycleUtil(bool graph[MAX_V][MAX_V], int path[], int pos) {
     stats.recursionCalls++;
     stats.pathsExplored++;
     
+    if (stepByStep) {
+        visualizePathState(path, pos, "Cycle");
+    }
+    
     // Base case: all vertices are included
     if (pos == numVertices) {
         // Check if there's an edge from last vertex to first vertex
         if (graph[path[pos - 1]][path[0]]) {
+            if (stepByStep) {
+                cout << "\n✓ Complete Hamiltonian cycle found!" << endl;
+                cout << "Edge from " << path[pos - 1] << " to " << path[0] << " exists!" << endl;
+            }
             return true;
+        }
+        if (stepByStep) {
+            cout << "\n✗ No edge from " << path[pos - 1] << " to " << path[0] << endl;
         }
         return false;
     }
     
     // Try different vertices as next candidate
     for (int v = 1; v < numVertices; v++) {
+        if (stepByStep) {
+            cout << "Trying vertex " << v << " at position " << pos << "..." << endl;
+        }
+        
         if (isSafe(v, graph, path, pos)) {
+            if (stepByStep) {
+                cout << "✓ Vertex " << v << " is safe" << endl;
+            }
+            
             path[pos] = v;
             
             if (hamiltonianCycleUtil(graph, path, pos + 1)) {
                 return true;
             }
             
+            if (stepByStep) {
+                cout << "✗ Backtracking from vertex " << v << endl;
+            }
+            
             path[pos] = -1;
             stats.backtrackCount++;
+        } else {
+            if (stepByStep) {
+                cout << "✗ Vertex " << v << " is not safe" << endl;
+            }
         }
     }
     
@@ -165,6 +258,10 @@ bool hamiltonianPath(bool graph[MAX_V][MAX_V], int path[]) {
     
     // Try starting from each vertex
     for (int start = 0; start < numVertices; start++) {
+        if (stepByStep) {
+            cout << "\n=== Trying starting vertex: " << start << " ===" << endl;
+        }
+        
         path[0] = start;
         
         if (hamiltonianPathUtil(graph, path, 1)) {
@@ -258,6 +355,26 @@ void printEdges(bool graph[MAX_V][MAX_V]) {
     cout << "Total edges: " << edgeCount << endl;
 }
 
+// Get degree of a vertex
+int getDegree(bool graph[MAX_V][MAX_V], int v) {
+    int degree = 0;
+    for (int i = 0; i < numVertices; i++) {
+        if (graph[v][i]) {
+            degree++;
+        }
+    }
+    return degree;
+}
+
+// Print vertex degrees
+void printDegrees(bool graph[MAX_V][MAX_V]) {
+    cout << "\nVertex Degrees:" << endl;
+    for (int i = 0; i < numVertices; i++) {
+        int degree = getDegree(graph, i);
+        cout << "Vertex " << i << ": degree " << degree << endl;
+    }
+}
+
 // Print Hamiltonian path
 void printPath(int path[]) {
     cout << "\nHamiltonian Path:" << endl;
@@ -312,6 +429,43 @@ void printStats(string type = "") {
     cout << "========================================" << endl;
 }
 
+// Input custom graph
+void inputCustomGraph(bool graph[MAX_V][MAX_V]) {
+    cout << "\nEnter number of vertices (max " << MAX_V << "): ";
+    cin >> numVertices;
+    
+    if (numVertices > MAX_V) {
+        cout << "Too many vertices! Using maximum: " << MAX_V << endl;
+        numVertices = MAX_V;
+    }
+    
+    // Initialize graph
+    for (int i = 0; i < numVertices; i++) {
+        for (int j = 0; j < numVertices; j++) {
+            graph[i][j] = false;
+        }
+    }
+    
+    cout << "\nEnter number of edges: ";
+    int edges;
+    cin >> edges;
+    
+    cout << "\nEnter edges (format: vertex1 vertex2):" << endl;
+    for (int i = 0; i < edges; i++) {
+        int u, v;
+        cout << "Edge " << (i + 1) << ": ";
+        cin >> u >> v;
+        
+        if (u >= 0 && u < numVertices && v >= 0 && v < numVertices && u != v) {
+            graph[u][v] = true;
+            graph[v][u] = true;
+        } else {
+            cout << "Invalid edge! Skipping..." << endl;
+            i--;
+        }
+    }
+}
+
 int main() {
     cout << "========================================" << endl;
     cout << "     Hamiltonian Path Problem          " << endl;
@@ -351,56 +505,73 @@ int main() {
         {1, 0, 0, 1, 0}
     };
     
-    int choice;
-    cout << "\nSelect test graph:" << endl;
-    cout << "1. Graph 1 (5 vertices)" << endl;
-    cout << "2. Complete graph K4 (4 vertices)" << endl;
-    cout << "3. Graph without Hamiltonian path (4 vertices)" << endl;
-    cout << "4. Cycle graph C5 (5 vertices)" << endl;
-    cout << "Enter choice (1-4): ";
-    cin >> choice;
+    int inputMode;
+    cout << "\nSelect input mode:" << endl;
+    cout << "1. Use preset graph" << endl;
+    cout << "2. Input custom graph" << endl;
+    cout << "Enter choice (1-2): ";
+    cin >> inputMode;
     
     bool graph[MAX_V][MAX_V];
     
-    if (choice == 1) {
-        numVertices = 5;
-        for (int i = 0; i < numVertices; i++) {
-            for (int j = 0; j < numVertices; j++) {
-                graph[i][j] = graph1[i][j];
+    if (inputMode == 1) {
+        int choice;
+        cout << "\nSelect test graph:" << endl;
+        cout << "1. Graph 1 (5 vertices)" << endl;
+        cout << "2. Complete graph K4 (4 vertices)" << endl;
+        cout << "3. Graph without Hamiltonian path (4 vertices)" << endl;
+        cout << "4. Cycle graph C5 (5 vertices)" << endl;
+        cout << "Enter choice (1-4): ";
+        cin >> choice;
+        
+        if (choice == 1) {
+            numVertices = 5;
+            for (int i = 0; i < numVertices; i++) {
+                for (int j = 0; j < numVertices; j++) {
+                    graph[i][j] = graph1[i][j];
+                }
             }
-        }
-        cout << "\n========================================" << endl;
-        cout << "    Test Graph 1                       " << endl;
-        cout << "========================================" << endl;
-    } else if (choice == 2) {
-        numVertices = 4;
-        for (int i = 0; i < numVertices; i++) {
-            for (int j = 0; j < numVertices; j++) {
-                graph[i][j] = graph2[i][j];
+            cout << "\n========================================" << endl;
+            cout << "    Test Graph 1                       " << endl;
+            cout << "========================================" << endl;
+        } else if (choice == 2) {
+            numVertices = 4;
+            for (int i = 0; i < numVertices; i++) {
+                for (int j = 0; j < numVertices; j++) {
+                    graph[i][j] = graph2[i][j];
+                }
             }
-        }
-        cout << "\n========================================" << endl;
-        cout << "    Complete Graph K4                  " << endl;
-        cout << "========================================" << endl;
-    } else if (choice == 3) {
-        numVertices = 4;
-        for (int i = 0; i < numVertices; i++) {
-            for (int j = 0; j < numVertices; j++) {
-                graph[i][j] = graph3[i][j];
+            cout << "\n========================================" << endl;
+            cout << "    Complete Graph K4                  " << endl;
+            cout << "========================================" << endl;
+        } else if (choice == 3) {
+            numVertices = 4;
+            for (int i = 0; i < numVertices; i++) {
+                for (int j = 0; j < numVertices; j++) {
+                    graph[i][j] = graph3[i][j];
+                }
             }
-        }
-        cout << "\n========================================" << endl;
-        cout << "    Graph without Hamiltonian Path    " << endl;
-        cout << "========================================" << endl;
-    } else if (choice == 4) {
-        numVertices = 5;
-        for (int i = 0; i < numVertices; i++) {
-            for (int j = 0; j < numVertices; j++) {
-                graph[i][j] = graph4[i][j];
+            cout << "\n========================================" << endl;
+            cout << "    Graph without Hamiltonian Path    " << endl;
+            cout << "========================================" << endl;
+        } else if (choice == 4) {
+            numVertices = 5;
+            for (int i = 0; i < numVertices; i++) {
+                for (int j = 0; j < numVertices; j++) {
+                    graph[i][j] = graph4[i][j];
+                }
             }
+            cout << "\n========================================" << endl;
+            cout << "    Cycle Graph C5                     " << endl;
+            cout << "========================================" << endl;
+        } else {
+            cout << "Invalid choice!" << endl;
+            return 1;
         }
+    } else if (inputMode == 2) {
+        inputCustomGraph(graph);
         cout << "\n========================================" << endl;
-        cout << "    Cycle Graph C5                     " << endl;
+        cout << "    Custom Graph                       " << endl;
         cout << "========================================" << endl;
     } else {
         cout << "Invalid choice!" << endl;
@@ -409,6 +580,7 @@ int main() {
     
     printGraph(graph);
     printEdges(graph);
+    printDegrees(graph);
     
     int mode;
     cout << "\nSelect mode:" << endl;
@@ -420,6 +592,17 @@ int main() {
     cin >> mode;
     
     int path[MAX_V];
+    
+    if (mode == 1 || mode == 2) {
+        int vizMode;
+        cout << "\nSelect visualization mode:" << endl;
+        cout << "1. Instant solution" << endl;
+        cout << "2. Step-by-step visualization" << endl;
+        cout << "Enter choice (1-2): ";
+        cin >> vizMode;
+        
+        stepByStep = (vizMode == 2);
+    }
     
     if (mode == 1) {
         cout << "\n========================================" << endl;
